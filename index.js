@@ -3,6 +3,7 @@
 //====================================================
 const express = require('express');
 require('./config/db');
+const employeesRoutes = require('./routes/employeeRoutes');
 
 //====================================================
 // INSTANCIA DE EXPRESS
@@ -10,9 +11,14 @@ require('./config/db');
 const app = express();
 
 //====================================================
+// MIDDLEWARES
+//====================================================
+app.use(express.json());
+
+//====================================================
 // PUERTO PARA EL SERVIDOR USANDO UNA VARIABLE DE ENTORNO O EL PUERTO 3000 POR DEFECTO
 //====================================================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 //====================================================
 // RUTA DE PRUEBA PARA VERIFICAR QUE EL SERVIDOR ESTA CORRIENDO
@@ -20,6 +26,11 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.json({ message: '¡API de SIGEC en funcionamiento!'});
 });
+
+//====================================================
+// RUTAS DE EMPLEADOS
+//====================================================
+app.use('/api/employees', employeesRoutes);
 
 //====================================================
 // ESCUCHA EN EL PUERTO DEFINIDO
