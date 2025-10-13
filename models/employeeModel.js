@@ -28,6 +28,11 @@ const Employee = {
 
       db.query(query, values, (err, result) => {
         if (err) {
+          // ER_DUP_ENTRY es el código de error de MySQL para entradas duplicadas.
+          if (err.code === 'ER_DUP_ENTRY') {
+            // Puedes personalizar este error para que el controlador lo interprete.
+            return reject(new Error('El legajo o email ya existe.'));
+          }
           return reject(err);
         }
         resolve(result);

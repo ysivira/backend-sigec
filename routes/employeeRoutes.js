@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const { registerEmployee, loginEmployee, getMyProfile } = require('../controllers/employeeController.js');
-const { protect } = require('../middleware/AuthMiddleware.js');
+const { protect } = require('../middleware/authMiddleware.js');
 
 //Ruta para registrar un nuevo empleado
 router.post('/register', registerEmployee); 

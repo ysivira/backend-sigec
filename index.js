@@ -4,6 +4,7 @@
 const express = require('express');
 require('./config/db');
 const employeesRoutes = require('./routes/employeeRoutes');
+const planRoutes = require('./routes/planRoutes');
 
 //====================================================
 // INSTANCIA DE EXPRESS
@@ -28,9 +29,10 @@ app.get('/', (req, res) => {
 });
 
 //====================================================
-// RUTAS DE EMPLEADOS
+// RUTAS 
 //====================================================
 app.use('/api/employees', employeesRoutes);
+app.use('/api/plans', planRoutes);
 
 //====================================================
 // ESCUCHA EN EL PUERTO DEFINIDO
