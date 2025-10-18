@@ -17,7 +17,7 @@ const app = express();
 app.use(express.json());
 
 //====================================================
-// PUERTO PARA EL SERVIDOR USANDO UNA VARIABLE DE ENTORNO O EL PUERTO 3000 POR DEFECTO
+// PUERTO PARA EL SERVIDOR USANDO UNA VARIABLE DE ENTORNO O EL PUERTO 5000 POR DEFECTO
 //====================================================
 const PORT = process.env.PORT || 5000;
 

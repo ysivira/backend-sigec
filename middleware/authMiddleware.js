@@ -1,3 +1,7 @@
+//============================================================================
+// MIDDLEWARE DE AUTENTICACION
+//============================================================================= 
+
 const jwt = require('jsonwebtoken');
 const Employee = require('../models/employeeModel');
 
@@ -6,11 +10,11 @@ const protect = async (req, res, next) => {
 
     if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // Obtener el token del header
+            // Obtengo el token del header
             token = req.headers.authorization.split(' ')[1];
-            // Verificar el token
+            // Verifico el token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            // Obtener el empleado asociado al token
+            // Obtengo el empleado asociado al token
             req.employee = await Employee.findByLegajo(decoded.id);
             next();
         } catch (error) {

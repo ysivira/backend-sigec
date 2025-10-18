@@ -15,7 +15,7 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { isAdmin } = require('../middleware/adminMiddleware');
 
-// Aplicamos los middlewares a todas las rutas de este archivo
+// MIDLEWARE: Proteger todas las rutas y permitir solo a administradores
 router.use(protect, isAdmin);
 
 router.route('/')
