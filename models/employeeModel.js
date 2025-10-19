@@ -22,14 +22,14 @@ const Employee = {
       `;
 
       const values = [
-        legajo, 
-        nombre, 
-        segundo_nombre, 
-        apellido, 
+        legajo,
+        nombre,
+        segundo_nombre,
+        apellido,
         segundo_apellido,
-        email, 
-        telefono, 
-        direccion, 
+        email,
+        telefono,
+        direccion,
         hashedPassword,
       ];
 
@@ -56,7 +56,33 @@ const Employee = {
         resolve(results[0]);
       });
     });
+  },
+
+  // Actualizar el estado de un empleado (para activar/inactivar)
+  updateStatus: (legajo, estado) => {
+    return new Promise((resolve, reject) => {
+      const query = 'UPDATE empleados SET estado = ? WHERE legajo = ?';
+
+      db.query(query, [estado, legajo], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  },
+
+  // Obtener todos los empleados
+  findAll: () => {
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT legajo, nombre, apellido, email, rol, estado, supervisor_id FROM empleados';
+      //No se selecciona la contraseña por seguridad
+      db.query(query, (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
   }
+
+
 };
 
 module.exports = Employee;

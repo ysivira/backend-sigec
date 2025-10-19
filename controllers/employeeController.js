@@ -3,7 +3,6 @@
 //==========================================================    
 const bcrypt = require('bcryptjs');
 const Employee = require('../models/employeeModel');
-const jwt = require('jsonwebtoken');
 const generateToken = require('../utils/generateToken');
 
 //@desc  Registrar un nuevo empleado
@@ -65,7 +64,6 @@ const registerEmployee = async (req, res) => {
 // @desc    Autenticar (login) un empleado
 // @route   POST /api/employees/login
 // @access  Public
-
 const loginEmployee = async (req, res) => {
     try {
         const { legajo, password } = req.body;
@@ -76,24 +74,58 @@ const loginEmployee = async (req, res) => {
         // Verificar si el empleado existe
         const employee = await Employee.findByLegajo(legajo);
 
-        if (employee && await bcrypt.compare(password, employee.password)) {
+        if (employee && (await bcrypt.compare(password, employee.password))) {
+            // Verificar si el empleado está activo
             if (employee.estado !== 'activo') {
                 return res.status(401).json({
                     message: 'Cuenta inactiva o pendiente de activación.'
                 });
             }
             res.json({
-                id: employee.legajo, // Usamos legajo
+                id: employee.legajo,
                 legajo: employee.legajo,
                 nombre: employee.nombre,
                 apellido: employee.apellido,
                 rol: employee.rol,
-                token: generateToken(employee.legajo, employee.rol), // Token con Legajo y Rol
+                token: generateToken(employee.legajo, employee.rol),
             });
         } else {
             res.status(401).json({ message: 'Legajo o contraseña inválidos.' });
         }
-    } catch (error){ 
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor', error });
+    }
+};
+
+// @desc    Obtener todos los empleados (Admin)
+// @route   GET /api/employees
+// @access  Private/Admin
+const getAllEmployees = async (req, res) => {
+    try {
+        const employees = await Employee.findAll();
+        res.status(200).json(employees);
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor', error });
+    }
+};
+
+// @desc    Actualizar el estado de un empleado (Admin)
+// @route   PUT /api/employees/status/:legajo
+// @access  Private/Admin
+const updateEmployeeStatus = async (req, res) => {
+    try {
+        const { legajo } = req.params;
+        const { estado } = req.body;
+
+        // Validación
+        if (!estado || (estado !== 'activo' && estado !== 'inactivo')) {
+            return res.status(400).json({ message: "El estado debe ser 'activo' o 'inactivo'." });
+        }
+
+        await Employee.updateStatus(legajo, estado);
+
+        res.status(200).json({ message: 'Estado del empleado actualizado exitosamente.' });
+    } catch (error) {
         res.status(500).json({ message: 'Error en el servidor', error });
     }
 };
@@ -111,10 +143,12 @@ const getMyProfile = async (req, res) => {
         email,
         rol
     });
-}
+};
 
 module.exports = {
     registerEmployee,
     loginEmployee,
+    getAllEmployees,
+    updateEmployeeStatus,
     getMyProfile
 };
