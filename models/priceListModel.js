@@ -78,7 +78,7 @@ const PriceListModel = {
                 query += ' AND tipo_lista = ?';
                 params.push('Voluntaria');
             }
-            // Si tipoLista es 'Ambas', no añadimos más condiciones, por lo que se aplica a todas.
+            // Si tipoLista es 'Ambas', no añadimos más condiciones, por lo que se aplica a todas por como fue creado el query.
 
             db.query(query, params, (err, result) => {
                 if (err) return reject(err);
