@@ -10,6 +10,7 @@ const {
   getPricesByType,
   updatePriceEntry,
   deletePriceEntry,
+  applyMassiveIncrease,
 } = require('../controllers/priceListController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -25,6 +26,8 @@ router.route('/')
 router.route('/:id')
   .put(protect, isAdmin, updatePriceEntry)
   .delete(protect, isAdmin, deletePriceEntry);
+
+router.post('/increase', protect, isAdmin, applyMassiveIncrease);
 
 //=============================================================================
 // --- Rutas de Lectura (Admin y Asesor) ---

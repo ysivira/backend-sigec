@@ -60,6 +60,33 @@ const PriceListModel = {
             });
         });
     },
+
+    // Aplicar un aumento de precio masivo
+    applyMassiveIncrease: (porcentaje, tipoLista) => {
+        return new Promise((resolve, reject) => {
+            // Convertimos el porcentaje (ej: 15) a un multiplicador (ej: 1.15)
+            const multiplicador = 1 + porcentaje / 100;
+
+            let query = 'UPDATE listas_de_precios SET precio = precio * ? WHERE activo = 1';
+            const params = [multiplicador];
+
+            // Añadimos la condición del tipo de lista 
+            if (tipoLista === 'Obligatoria') {
+                query += ' AND tipo_lista = ?';
+                params.push('Obligatoria');
+            } else if (tipoLista === 'Voluntaria') {
+                query += ' AND tipo_lista = ?';
+                params.push('Voluntaria');
+            }
+            // Si tipoLista es 'Ambas', no añadimos más condiciones, por lo que se aplica a todas.
+
+            db.query(query, params, (err, result) => {
+                if (err) return reject(err);
+                // result.affectedRows nos dirá cuántos precios se actualizaron
+                resolve(result);
+            });
+        });
+    }
 };
 
 module.exports = PriceListModel;

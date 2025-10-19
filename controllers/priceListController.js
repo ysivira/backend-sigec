@@ -3,7 +3,7 @@
 //=============================================================================
 
 const PriceList = require('../models/priceListModel');
-const Plan = require('../models/planModel'); 
+const Plan = require('../models/planModel');
 
 // @desc    Crear una nueva entrada de precio
 // @route   POST /api/pricelists
@@ -92,10 +92,37 @@ const deletePriceEntry = async (req, res) => {
   }
 };
 
+// @desc    Aplicar un aumento masivo a los precios
+// @route   POST /api/priceList/increase 
+// @access  Private/Admin
+const applyMassiveIncrease = async (req, res) => {
+  try {
+    const { porcentaje, tipo_lista } = req.body;
+
+    // Validación
+    if (!porcentaje || !tipo_lista) {
+      return res.status(400).json({ message: 'Debe ingresar el "porcentaje" de aumento y un "tipo de lista".' });
+    }
+    if (tipo_lista !== 'Obligatoria' && tipo_lista !== 'Voluntaria' && tipo_lista !== 'Ambas') {
+      return res.status(400).json({ message: "El tipo de lista debe ser 'Obligatoria', 'Voluntaria' o 'Ambas'." });
+    }
+
+    const result = await PriceList.applyMassiveIncrease(parseFloat(porcentaje), tipo_lista);
+
+    res.status(200).json({
+      message: 'Aumento aplicado exitosamente.',
+      registros_afectados: result.affectedRows
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error en el servidor', error });
+  }
+};
+
 module.exports = {
   createPriceEntry,
   getPricesByPlan,
-  getPricesByType, 
+  getPricesByType,
   updatePriceEntry,
   deletePriceEntry,
+  applyMassiveIncrease,
 };
