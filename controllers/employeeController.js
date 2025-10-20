@@ -4,6 +4,11 @@
 const bcrypt = require('bcryptjs');
 const Employee = require('../models/employeeModel');
 const generateToken = require('../utils/generateToken');
+const { ROLES, ESTADOS_EMPLEADO } = require('../utils/constants');
+
+//STUBS de funcionde de email
+const sendActivationEmail = (email, legajo) => console.log(`Simulando envio de email con link de confirmacion a ${email} para el legajo ${legajo}`);
+const sendWelcomeEmail = (email, nombre) => console.log(`Simulando envio de email de bienvenida a ${email} para el empleado ${nombre}`);
 
 //@desc  Registrar un nuevo empleado
 //@route POST /api/employees/register
@@ -52,6 +57,9 @@ const registerEmployee = async (req, res) => {
         };
 
         await Employee.create(newEmployeeData);
+
+        // Simular el envio de email de activacion
+        sendActivationEmail(email, legajo);
 
         res.status(201).json({ message: 'Asesor registrado exitosamente. La cuenta está inactiva y pendiente de activación.' });
 
@@ -102,33 +110,100 @@ const loginEmployee = async (req, res) => {
 // @access  Private/Admin
 const getAllEmployees = async (req, res) => {
     try {
-        const employees = await Employee.findAll();
+        const estadoFilter = req.query.estado || null; // captura el query param del estado
+        const employees = await Employee.findAll(estadoFilter);
         res.status(200).json(employees);
     } catch (error) {
         res.status(500).json({ message: 'Error en el servidor', error });
     }
 };
 
-// @desc    Actualizar el estado de un empleado (Admin)
+// @desc    Actualizar detalles/estado/rol de un empleado (Admin)
 // @route   PUT /api/employees/status/:legajo
 // @access  Private/Admin
-const updateEmployeeStatus = async (req, res) => {
+const updateEmployeeDetails = async (req, res) => {
     try {
         const { legajo } = req.params;
-        const { estado } = req.body;
+        const { estado, rol, supervisor_id } = req.body;
+        const employeeToUpdate = await Employee.findByLegajo(legajo);
 
-        // Validación
-        if (!estado || (estado !== 'activo' && estado !== 'inactivo')) {
-            return res.status(400).json({ message: "El estado debe ser 'activo' o 'inactivo'." });
+        if (!employeeToUpdate) {
+            return res.status(404).json({ message: 'Empleado no encontrado.' });
+        }
+        
+        const updateData = {};
+        let wasActivated = false;
+        const estadosValidos = Object.values(ESTADOS_EMPLEADO);
+        const rolesValidos = Object.values(ROLES);
+
+        // 1. Manejo del Estado (Confirmación de Email)
+        if (estado) {
+            const estadoLower = estado.toLowerCase();
+            
+            if (!estadosValidos.includes(estadoLower)) {
+                return res.status(400).json({ message: `El estado debe ser uno de los siguientes: ${estadosValidos.join(', ')}.` });
+            }
+            
+            // El Admin NO puede activar si el email no fue confirmado.
+            if (estadoLower === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.email_confirmado !== 1) {
+                return res.status(400).json({ message: 'No se puede activar el usuario. Email no confirmado (pendiente de confirmación del asesor).' });
+            }
+            
+            // Detección de la activación para enviar el email de bienvenida
+            if (estadoLower === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.estado === ESTADOS_EMPLEADO.INACTIVO) {
+                wasActivated = true; 
+            }
+            updateData.estado = estadoLower;
         }
 
-        await Employee.updateStatus(legajo, estado);
+        // 2. Manejo del Rol
+        if (rol) {
+             const rolLower = rol.toLowerCase();
 
-        res.status(200).json({ message: 'Estado del empleado actualizado exitosamente.' });
+             if (!rolesValidos.includes(rolLower)) {
+                return res.status(400).json({ message: `Rol inválido. Debe ser uno de los siguientes: ${rolesValidos.join(', ')}.` });
+            }
+            updateData.rol = rolLower;
+        }
+
+        // 3. Manejo del Supervisor (Asignación y Remoción)
+        const currentRol = updateData.rol || employeeToUpdate.rol;
+
+        if (currentRol === ROLES.ASESOR) {
+            // Si el Admin quiere asignar un supervisor
+            if (supervisor_id) {
+                const supervisor = await Employee.findByLegajo(supervisor_id);
+                if (!supervisor || (supervisor.rol !== ROLES.SUPERVISOR && supervisor.rol !== ROLES.ADMINISTRADOR)) {
+                    return res.status(400).json({ message: 'Supervisor asignado inválido. Debe ser Supervisor o Administrador.' });
+                }
+                updateData.supervisor_id = supervisor_id;
+            // Si el Admin quiere quitar el supervisor explícitamente enviando supervisor_id: null
+            } else if (supervisor_id === null) {
+                 updateData.supervisor_id = null;
+            }
+        } else if (currentRol === ROLES.SUPERVISOR || currentRol === ROLES.ADMINISTRADOR) {
+            // Forzamos NULL si el rol es Supervisor o Administrador
+            updateData.supervisor_id = null; 
+        }
+
+        // Ejecutar actualización
+        const result = await Employee.updateDetails(legajo, updateData);
+
+        // Si se acaba de activar, enviamos el email de bienvenida
+        if (wasActivated) {
+            sendWelcomeEmail(employeeToUpdate.email, employeeToUpdate.nombre);
+        }
+
+        if (result.affectedRows === 0) {
+             return res.status(200).json({ message: 'No se realizaron cambios.' });
+        }
+
+        res.status(200).json({ message: 'Detalles del empleado actualizados exitosamente.' });
     } catch (error) {
+        console.error('Error al actualizar empleado:', error);
         res.status(500).json({ message: 'Error en el servidor', error });
     }
-};
+}
 
 //Obtener el perfil del empleado autenticado
 //@desc    Obtener el perfil del empleado autenticado
@@ -145,10 +220,30 @@ const getMyProfile = async (req, res) => {
     });
 };
 
+// @desc    Ruta de confirmación de email (Link enviado al usuario)
+// @route   GET /api/employees/confirm-email/:legajo
+// @access  Public
+const confirmEmployeeEmail = async (req, res) => {
+    try {
+        const { legajo } = req.params;
+        const result = await Employee.confirmEmail(legajo);
+
+        if (result.affectedRows === 0) {
+            return res.status(400).json({ message: 'Confirmación de email fallida o ya confirmada.' });
+        }
+        res.status(200).json({ message: 'Email confirmado exitosamente. La cuenta está pendiente de activación por el Administrador.' });
+
+    } catch (error) {
+        console.error('Error al confirmar email:', error);
+        res.status(500).json({ message: 'Error en el servidor', error });
+    }
+};
+
 module.exports = {
     registerEmployee,
     loginEmployee,
     getAllEmployees,
-    updateEmployeeStatus,
+    updateEmployeeDetails,
+    confirmEmployeeEmail,
     getMyProfile
 };
