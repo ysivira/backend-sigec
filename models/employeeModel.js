@@ -58,18 +58,6 @@ const Employee = {
     });
   },
 
-  // Actualizar el estado de un empleado (para activar/inactivar)
-  updateStatus: (legajo, estado) => {
-    return new Promise((resolve, reject) => {
-      const query = 'UPDATE empleados SET estado = ? WHERE legajo = ?';
-
-      db.query(query, [estado, legajo], (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
-    });
-  },
-
   // Obtener todos los empleados aceptando filtro de estado
   findAll: (estado = null) => {
     return new Promise((resolve, reject) => {
