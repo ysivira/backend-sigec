@@ -7,6 +7,7 @@ const employeesRoutes = require('./routes/employeeRoutes');
 const planRoutes = require('./routes/planRoutes');
 const priceListRoutes = require('./routes/priceListRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
+const cotizacionRoutes = require('./routes/cotizacionRoutes');
 
 
 //====================================================
@@ -38,6 +39,7 @@ app.use('/api/employees', employeesRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/priceList', priceListRoutes);
 app.use('/api/clientes', clienteRoutes);
+app.use('/api/cotizaciones', cotizacionRoutes);
 
 //====================================================
 // ESCUCHA EN EL PUERTO DEFINIDO

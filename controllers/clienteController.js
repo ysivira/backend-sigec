@@ -41,16 +41,12 @@ const createCliente = async (req, res) => {
       return res.status(400).json({ message: 'Un cliente con este DNI ya existe.' });
     }
 
-    // El ID del asesor viene del token (req.user fue añadido por el authMiddleware)
-    const empleado_id = req.employee.legajo; 
-
     const dataCliente = {
       dni,
       nombres,
       apellidos,
       email,
       telefono,
-      empleado_id, 
     };
 
     const result = await Cliente.create(dataCliente);
