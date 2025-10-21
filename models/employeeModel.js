@@ -82,7 +82,7 @@ const Employee = {
 
   //Actualizar los detalles de un empleado (estado, rol y supervisor_id)
   updateDetails: (legajo, data) => {
-    return new Promise((resolve, rehect) => {
+    return new Promise((resolve, reject) => {
       let fields = [];
       let values = [];
 
