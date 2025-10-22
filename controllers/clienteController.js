@@ -51,9 +51,9 @@ const createCliente = async (req, res) => {
 
     const result = await Cliente.create(dataCliente);
 
-    res.status(201).json({ 
-      message: 'Cliente creado exitosamente', 
-      clienteId: result.insertId 
+    res.status(201).json({
+      message: 'Cliente creado exitosamente',
+      clienteId: result.insertId
     });
 
   } catch (error) {
@@ -61,7 +61,62 @@ const createCliente = async (req, res) => {
   }
 };
 
+// @desc    Obtener listado de clientes por asesor logueado
+// @route   GET /api/clientes/asesor
+// @access  Private (Asesor)
+const getClientesByAsesor = async (req, res) => {
+  try {
+    const asesor_logueado_legajo = req.employee.legajo;
+    const clientes = await Cliente.findClientesByAsesor(asesor_logueado_legajo);
+    res.status(200).json(clientes);
+  } catch (error) {
+    console.error('Error al obtener listado de clientes:', error);
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
+  }
+};
+
+// @desc    Actualizar datos de un cliente
+// @route   PUT /api/clientes/:id
+// @access  Private (Asesor)
+const updateCliente = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const asesor_logueado_legajo = req.employee.legajo;
+    
+    // Verifica que el cliente existe
+    const cliente = await Cliente.findById(id); 
+    
+    if (!cliente) {
+        return res.status(404).json({ message: 'Cliente no encontrado.' });
+    }
+    
+    // Verifica que pertenece al asesor
+    if (cliente.asesor_captador_id !== asesor_logueado_legajo) {
+      return res.status(403).json({ message: 'No autorizado para modificar este cliente.' });
+    }
+
+    // Si todo está bien, actualizarlo
+    const dataToUpdate = req.body;
+    const result = await Cliente.update(id, dataToUpdate);
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({ message: 'Cliente actualizado exitosamente.' });
+    } else {
+      res.status(400).json({ message: 'No se pudo actualizar el cliente.' });
+    }
+
+  } catch (error) {
+    console.error('Error al actualizar el cliente:', error);
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   verifyClienteByDni,
   createCliente,
+  getClientesByAsesor,
+  updateCliente
 };
