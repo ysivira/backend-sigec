@@ -4,6 +4,8 @@
 
 const Cotizacion = require('../models/cotizacionModel');
 const Cliente = require('../models/clienteModel');
+const Plan = require('../models/planModel');
+
 
 // @desc    Verificar si un cliente existe por DNI y su estado de cotización
 // @route   GET /api/cotizaciones/verify-dni/:dni
@@ -93,7 +95,21 @@ const createCotizacion = async (req, res) => {
             return res.status(400).json({ message: 'Faltan datos de cliente, cotización o miembros.' });
         }
 
-        // --- LÓGICA DE CLIENTE ---
+        // VALIDACIÓN DE PLAN
+        const plan_id = cotizacionData.plan_id;
+        if (!plan_id) {
+            return res.status(400).json({ message: 'No se especificó un plan_id.' });
+        }
+
+        // Filtra para saber si esta activo
+        const plan = await Plan.getById(plan_id);
+
+        if (!plan) {
+            // Si el plan no existe O está inactivo, 'plan' será undefined
+            return res.status(400).json({ message: `El plan ID ${plan_id} no existe o no se encuentra activo.` });
+        }
+
+        // LÓGICA DE CLIENTE
         const clienteExistente = await Cliente.findByDni(clienteData.dni);
 
         if (clienteExistente) {
@@ -163,9 +179,89 @@ const getCotizacionesByAsesor = async (req, res) => {
     }
 };
 
+// @desc    Actualizar una cotización
+// @route   PUT /api/cotizaciones/:id
+// @access  Private
+const updateCotizacion = async (req, res) => {
+    try {
+        const { id } = req.params; // ID de la cotización a modificar
+        const asesor_logueado_legajo = req.employee.legajo;
+        const { cotizacionData, miembrosData } = req.body; // Recibimos el body completo
+
+        if (!cotizacionData || !miembrosData) {
+            return res.status(400).json({ message: 'Faltan datos de cotización o miembros.' });
+        }
+
+        // Validación de Plan
+        const plan_id = cotizacionData.plan_id;
+        if (!plan_id) {
+            return res.status(400).json({ message: 'No se especificó un plan_id.' });
+        }
+        const plan = await Plan.getById(plan_id)
+        if (!plan) {
+            // Si el plan no existe O está inactivo, 'plan' será undefined
+            return res.status(400).json({ message: `El plan ID ${plan_id} no existe o no se encuentra activo.` });
+        }
+
+        // Verificar que la cotización existe y le pertenece al asesor 
+        const cotizacion = await Cotizacion.findCotizacionById(id);
+        if (!cotizacion) {
+            return res.status(404).json({ message: 'Cotización no encontrada.' });
+        }
+
+        if (cotizacion.asesor_id !== asesor_logueado_legajo) {
+            return res.status(403).json({ message: 'No autorizado para modificar esta cotización.' });
+        }
+
+        // Si todo está bien, llama al nuevo modelo de actualización completa
+        const result = await Cotizacion.updateFullCotizacion(id, cotizacionData, miembrosData);
+
+        res.status(200).json(result); // Devuelve { id: id, message: '...' }
+
+    } catch (error) {
+        console.error('Error al actualizar la cotización (Controlador):', error);
+        res.status(500).json({ message: 'Error del servidor', error: error.message });
+    }
+};
+
+// @desc    Anular (borrado lógico) una cotización
+// @route   DELETE /api/cotizaciones/:id
+// @access  Private (Asesor)
+const anularCotizacion = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const asesor_logueado_legajo = req.employee.legajo;
+
+        // Verificar que la cotización existe y le pertenece al asesor (Seguridad)
+        const cotizacion = await Cotizacion.findCotizacionById(id);
+        if (!cotizacion) {
+            return res.status(404).json({ message: 'Cotización no encontrada.' });
+        }
+
+        if (cotizacion.asesor_id !== asesor_logueado_legajo) {
+            return res.status(403).json({ message: 'No autorizado para anular esta cotización.' });
+        }
+
+        // Si todo está bien, anularla (activo = 0)
+        const result = await Cotizacion.anularCotizacion(id);
+
+        if (result.affectedRows > 0) {
+            res.status(200).json({ message: 'Cotización anulada exitosamente.' });
+        } else {
+            res.status(400).json({ message: 'No se pudo anular la cotización.' });
+        }
+
+    } catch (error) {
+        console.error('Error al anular la cotización:', error);
+        res.status(500).json({ message: 'Error del servidor', error: error.message });
+    }
+};
+
 module.exports = {
     verifyDni,
     createCotizacion,
     getCotizacionById,
     getCotizacionesByAsesor,
+    updateCotizacion,
+    anularCotizacion
 };

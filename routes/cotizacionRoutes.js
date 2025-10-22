@@ -7,7 +7,9 @@ const {
     verifyDni, 
     createCotizacion,
     getCotizacionById,
-    getCotizacionesByAsesor
+    getCotizacionesByAsesor,
+    updateCotizacion,
+    anularCotizacion
 } = require('../controllers/cotizacionController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,6 +24,12 @@ router.get('/', getCotizacionesByAsesor);
 
 // Ruta para crear la cotización (y el cliente si es nuevo)
 router.post('/', createCotizacion);
+
+// Ruta para anular una cotización
+router.delete('/:id', anularCotizacion);
+
+// Ruta para actualizar una cotización
+router.put('/:id', updateCotizacion);
 
 // Ruta para obtener cotización completa por ID
 router.get('/:id', getCotizacionById);
