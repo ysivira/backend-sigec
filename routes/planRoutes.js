@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const {
   createPlan,
-  getAllPlans,
+  getAllPlansAdmin,
   getPlanById,
   updatePlan,
   deletePlan,
@@ -20,7 +20,7 @@ router.use(protect, isAdmin);
 
 router.route('/')
   .post(createPlan)
-  .get(getAllPlans);
+  .get(getAllPlansAdmin);
 
 router.route('/:id')
   .get(getPlanById)

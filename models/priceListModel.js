@@ -5,50 +5,65 @@ const db = require('../config/db');
 
 const PriceListModel = {
     //crear lista de precios (admin)
-    create: (priceData) => {
-        return new Promise((resolve, reject) => {
-            const { plan_id, tipo_lista, edad_min, edad_max, precio } = priceData;
-            const query = 'INSERT INTO listas_de_precios (plan_id, tipo_lista, edad_min, edad_max, precio) VALUES ( ?,?,?,?,?)';
-            db.query(query, [plan_id, tipo_lista, edad_min, edad_max, precio], (err, result) => {
-                if (err) return reject(err);
-                resolve(result);
-            });
-        });
-    },
+   createBulk: (entries) => {
+    return new Promise((resolve, reject) => {
+      // La consulta para inserción masiva
+      const query = `
+        INSERT INTO listas_de_precios 
+        (lista_nombre, tipo_ingreso, rango_etario, plan_id, precio, activo) 
+        VALUES ?
+      `;
+
+      // Transformamos el array de objetos a un array de arrays
+      const values = entries.map(entry => [
+        entry.lista_nombre,
+        entry.tipo_ingreso,
+        entry.rango_etario,
+        entry.plan_id,
+        entry.precio,
+        1 // Por defecto declaramos activo
+      ]);
+      
+      db.query(query, [values], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  },
 
     // Obtener la lista de precios de un plan específico (sólo activos)
-    getByPlanId: (planId, tipoLista) => {
-        return new Promise((resolve, reject) => {
-            const query = 'SELECT * FROM listas_de_precios WHERE plan_id = ? AND tipo_lista = ? AND activo = 1';
-            db.query(query, [planId, tipoLista], (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
-            });
-        });
-    },
+   getByPlanId: (planId, tipoIngreso) => {
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM listas_de_precios WHERE plan_id = ? AND tipo_ingreso = ? AND activo = 1';
+      db.query(query, [planId, tipoIngreso], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+  },
 
     // Obtener la lista de precios completa por tipo de lista (sólo activos)
-    getByType: (tipoLista) => {
-        return new Promise((resolve, reject) => {
-            const query = 'SELECT * FROM listas_de_precios WHERE tipo_lista = ? AND activo = 1';
-            db.query(query, [tipoLista], (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
-            });
-        });
-    },
+    getByType: (tipoIngreso) => {
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM listas_de_precios WHERE tipo_ingreso = ? AND activo = 1';
+      db.query(query, [tipoIngreso], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+  },
 
     // Actualizar una entrada de la lista de precios (admin)
-    update: (id, priceData) => {
-        return new Promise((resolve, reject) => {
-            const { edad_min, edad_max, precio } = priceData;
-            const query = 'UPDATE listas_de_precios SET edad_min = ?, edad_max = ?, precio = ? WHERE id = ?';
-            db.query(query, [edad_min, edad_max, precio, id], (err, result) => {
-                if (err) return reject(err);
-                resolve(result);
-            });
-        });
-    },
+   update: (id, priceData) => {
+    return new Promise((resolve, reject) => {
+      const { rango_etario, precio } = priceData;
+      const query = 'UPDATE listas_de_precios SET rango_etario = ?, precio = ? WHERE id = ?';
+      db.query(query, [rango_etario, precio, id], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  },
 
     // Borrado lógico de una entrada de la lista de precios (admin)
     remove: (id) => {
@@ -62,31 +77,24 @@ const PriceListModel = {
     },
 
     // Aplicar un aumento de precio masivo
-    applyMassiveIncrease: (porcentaje, tipoLista) => {
-        return new Promise((resolve, reject) => {
-            // Convertimos el porcentaje (ej: 15) a un multiplicador (ej: 1.15)
-            const multiplicador = 1 + porcentaje / 100;
+    applyMassiveIncrease: (porcentaje, tipoIngreso) => {
+    return new Promise((resolve, reject) => {
+      const multiplicador = 1 + porcentaje / 100;
+      let query = 'UPDATE listas_de_precios SET precio = precio * ? WHERE activo = 1';
+      const params = [multiplicador];
 
-            let query = 'UPDATE listas_de_precios SET precio = precio * ? WHERE activo = 1';
-            const params = [multiplicador];
-
-            // Añadimos la condición del tipo de lista 
-            if (tipoLista === 'Obligatoria') {
-                query += ' AND tipo_lista = ?';
-                params.push('Obligatoria');
-            } else if (tipoLista === 'Voluntaria') {
-                query += ' AND tipo_lista = ?';
-                params.push('Voluntaria');
-            }
-            // Si tipoLista es 'Ambas', no añadimos más condiciones, por lo que se aplica a todas por como fue creado el query.
-
-            db.query(query, params, (err, result) => {
-                if (err) return reject(err);
-                // result.affectedRows nos dirá cuántos precios se actualizaron
-                resolve(result);
-            });
-        });
-    }
+      if (tipoIngreso === 'Obligatorio' || tipoIngreso === 'Voluntario') {
+        query += ' AND tipo_ingreso = ?';
+        params.push(tipoIngreso);
+      }
+      // Si se desea actualizar todo no se añade filtro adicional
+      
+      db.query(query, params, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+  }
 };
 
 module.exports = PriceListModel;

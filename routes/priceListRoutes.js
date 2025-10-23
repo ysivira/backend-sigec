@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createPriceEntry,
+  createPriceListBulk,
   getPricesByPlan,
   getPricesByType,
   updatePriceEntry,
@@ -21,7 +21,7 @@ const { isAdmin } = require('../middleware/adminMiddleware');
 // Estas rutas requieren que el usuario sea un administrador
 //=============================================================================
 router.route('/')
-  .post(protect, isAdmin, createPriceEntry);
+  .post(protect, isAdmin, createPriceListBulk);
 
 router.route('/:id')
   .put(protect, isAdmin, updatePriceEntry)
@@ -36,9 +36,9 @@ router.post('/increase', protect, isAdmin, applyMassiveIncrease);
 //=============================================================================
 
 // Obtener precios por Plan y Tipo (ej: /api/pricelists/plan/1/Obligatoria)
-router.get('/plan/:planId/:tipoLista', protect, getPricesByPlan);
+router.get('/plan/:planId/:tipoIngreso', protect, getPricesByPlan);
 
 // Obtener TODOS los precios de un tipo (ej: /api/pricelists/type/Voluntaria)
-router.get('/type/:tipoLista', protect, getPricesByType);
+router.get('/type/:tipoIngreso', protect, getPricesByType);
 
 module.exports = router;

@@ -9,26 +9,36 @@ const Plan = require('../models/planModel');
 // @access  Private/Admin
 const createPlan = async (req, res) => {
   try {
-    const { nombre } = req.body;
+    const { nombre, detalles, condiciones_generales } = req.body;
     if (!nombre) {
       return res.status(400).json({ message: 'El nombre del plan es requerido.' });
     }
-    const result = await Plan.create({ nombre });
-    res.status(201).json({ message: 'Plan creado exitosamente', planId: result.insertId });
+
+    const planId = await Plan.create({ 
+      nombre, 
+      detalles, 
+      condiciones_generales, 
+    });
+    res.status(201).json({ 
+      message: 'Plan creado exitosamente', 
+      planId: planId
+    });
   } catch (error) {
+    console.error('Error al crear el plan:', error);
     res.status(500).json({ message: 'Error en el servidor', error });
   }
 };
 
-// @desc    Obtener todos los planes
+// @desc    Obtener todos los planes (activos e inactivos)
 // @route   GET /api/plans
 // @access  Private/Admin
-const getAllPlans = async (req, res) => {
+const getAllPlansAdmin = async (req, res) => {
   try {
-    const planes = await Plan.getAll();
+    const planes = await Plan.getAllAdmin();
     res.status(200).json(planes);
   } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error });
+    console.error('Error al obtener planes (Admin):', error);
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
   }
 };
 
@@ -52,11 +62,22 @@ const getPlanById = async (req, res) => {
 // @access  Private/Admin
 const updatePlan = async (req, res) => {
   try {
-    const { nombre } = req.body;
+    
+    const { nombre, detalles, condiciones_generales, activo } = req.body;
+    
     if (!nombre) {
       return res.status(400).json({ message: 'El nombre del plan es requerido.' });
     }
-    await Plan.update(req.params.id, { nombre });
+
+    const estadoActivo = (activo === true || activo === 1) ? 1 : 0;
+
+    await Plan.update(req.params.id, { 
+      nombre, 
+      detalles, 
+      condiciones_generales, 
+      activo: estadoActivo 
+    });
+    
     res.status(200).json({ message: 'Plan actualizado exitosamente.' });
   } catch (error) {
     res.status(500).json({ message: 'Error en el servidor', error });
@@ -77,8 +98,9 @@ const deletePlan = async (req, res) => {
 
 module.exports = {
   createPlan,
-  getAllPlans,
+  getAllPlansAdmin,
   getPlanById,
   updatePlan,
   deletePlan,
+
 };
