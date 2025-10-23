@@ -8,6 +8,7 @@ const planRoutes = require('./routes/planRoutes');
 const priceListRoutes = require('./routes/priceListRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
 const cotizacionRoutes = require('./routes/cotizacionRoutes');
+const rateLimit = require('express-rate-limit');
 
 
 //====================================================
@@ -19,6 +20,22 @@ const app = express();
 // MIDDLEWARES
 //====================================================
 app.use(express.json());
+
+// =======================================================
+// SEGURIDAD: LÍMITE GLOBAL (Defensa DoS)
+// =======================================================
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite: 100 peticiones por IP cada 15 minutos
+  message: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo después de 15 minutos',
+  standardHeaders: true, 
+  legacyHeaders: false,
+});
+
+// =======================================================
+// Aplico el limitador a TODAS las rutas que empiecen con /api
+// =======================================================
+app.use('/api', globalLimiter);
 
 //====================================================
 // PUERTO PARA EL SERVIDOR USANDO UNA VARIABLE DE ENTORNO O EL PUERTO 5000 POR DEFECTO
