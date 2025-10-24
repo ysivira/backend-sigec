@@ -9,6 +9,7 @@ const priceListRoutes = require('./routes/priceListRoutes');
 const clienteRoutes = require('./routes/clienteRoutes');
 const cotizacionRoutes = require('./routes/cotizacionRoutes');
 const rateLimit = require('express-rate-limit');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 
 //====================================================
@@ -57,6 +58,15 @@ app.use('/api/plans', planRoutes);
 app.use('/api/priceList', priceListRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
+
+//====================================================
+// MANEJO DE ERRORES 
+//====================================================
+// Middleware 404 (si la ruta no existe)
+app.use(notFound);
+
+// Middleware 500 (si algo falla en las rutas)
+app.use(errorHandler);
 
 //====================================================
 // ESCUCHA EN EL PUERTO DEFINIDO

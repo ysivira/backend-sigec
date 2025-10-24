@@ -4,13 +4,20 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
-const { registerEmployee, 
-    loginEmployee, 
-    getAllEmployees, 
-    updateEmployeeDetails, 
-    getMyProfile, 
-    confirmEmployeeEmail 
+const { 
+  registerEmployee, 
+  loginEmployee, 
+  getAllEmployees, 
+  updateEmployeeDetails, 
+  getMyProfile, 
+  confirmEmployeeEmail 
 } = require('../controllers/employeeController.js');
+const { 
+  validateEmployeeRegistration, 
+  validateEmployeeLogin, 
+  validateEmployeeUpdate, 
+  checkValidation 
+} = require('../middleware/validationMiddleware');
 const { protect } = require('../middleware/authMiddleware.js');
 const { isAdmin } = require('../middleware/adminMiddleware.js');
 
@@ -24,13 +31,22 @@ const loginLimiter = rateLimit({
 });
 
 //Ruta para registrar un nuevo empleado
-router.post('/register', registerEmployee); 
+router.post('/register', 
+  validateEmployeeRegistration, 
+  checkValidation, 
+  registerEmployee
+); 
 
 //Ruta para confirmar el email del empleado
 router.get('/confirm-email/:legajo', confirmEmployeeEmail);
 
 //Ruta para el inicio de sesion del empleado
-router.post('/login', loginLimiter, loginEmployee);
+router.post('/login', 
+  loginLimiter,                
+  validateEmployeeLogin,     
+  checkValidation,           
+  loginEmployee
+);
 
 //Middleware de proteccion para rutas que requieren autenticacion
 router.get('/myprofile', protect, getMyProfile);
@@ -40,6 +56,12 @@ router.get('/myprofile', protect, getMyProfile);
 router.get('/', protect, isAdmin, getAllEmployees);
 
 //Actualiza los detalles/estado/rol de un empleado
-router.put('/:legajo', protect, isAdmin, updateEmployeeDetails);
+router.put('/:legajo', 
+  protect, 
+  isAdmin, 
+  validateEmployeeUpdate,      
+  checkValidation,             
+  updateEmployeeDetails
+);
 
 module.exports = router;

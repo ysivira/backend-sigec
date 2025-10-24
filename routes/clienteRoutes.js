@@ -12,6 +12,13 @@ const {
 
 const { protect } = require('../middleware/authMiddleware');
 
+// Importamos las reglas de validaciones y el revisor
+const {
+  validateClientCreation,
+  validateClientUpdate,
+  checkValidation
+} = require('../middleware/validationMiddleware');
+
 // Todas las rutas están protegidas, solo accesibles por asesores autenticados
 router.use(protect);
 
@@ -21,7 +28,11 @@ router.get('/verify/:dni', verifyClienteByDni);
 
 // @route   POST /api/clientes
 // Ruta para crear un nuevo cliente
-router.post('/', createCliente);
+router.post('/',
+  validateClientCreation, 
+  checkValidation,      
+  createCliente
+);
 
 // @route   GET /api/clientes
 // Ruta para obtener clientes del asesor autenticado
@@ -29,6 +40,10 @@ router.get('/', getClientesByAsesor);
 
 // @route   PUT /api/clientes/:id
 // Ruta para actualizar un cliente
-router.put('/:id', updateCliente);
+router.put('/:id',
+  validateClientUpdate,
+  checkValidation,
+  updateCliente
+);
 
 module.exports = router;
