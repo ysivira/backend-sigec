@@ -51,7 +51,6 @@ const getPricesByType = asyncHandler(async (req, res) => {
 
   const prices = await PriceList.getByType(tipoIngreso);
   res.status(200).json(prices);
-
 });
 
 // @desc    Actualizar una entrada de precio
@@ -60,14 +59,9 @@ const getPricesByType = asyncHandler(async (req, res) => {
 const updatePriceEntry = asyncHandler(async (req, res) => {
 
   const { rango_etario, precio } = req.body;
-  if (!rango_etario || precio === undefined) {
-    res.status(400);
-    throw new Error('El rango etario y el precio son requeridos.');
-  }
 
   await PriceList.update(req.params.id, { rango_etario, precio });
   res.status(200).json({ message: 'Entrada de precio actualizada exitosamente.' });
-
 });
 
 // @desc    Eliminar (lógicamente) una entrada de precio
@@ -83,16 +77,6 @@ const deletePriceEntry = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const applyMassiveIncrease = asyncHandler(async (req, res) => {
   const { porcentaje, tipo_ingreso } = req.body;
-
-  if (!porcentaje || !tipo_ingreso) {
-    res.status(400);
-    throw new Error('El "porcentaje" y el "tipo de ingreso" son requeridos.');
-  }
-
-  if (tipo_ingreso !== 'Obligatorio' && tipo_ingreso !== 'Voluntario' && tipo_ingreso !== 'Ambas') {
-    res.status(400);
-    throw new Error('El tipo de ingreso debe ser "Obligatorio", "Voluntario" o "Ambas".');
-  }
 
   const result = await PriceList.applyMassiveIncrease(parseFloat(porcentaje), tipo_ingreso);
 

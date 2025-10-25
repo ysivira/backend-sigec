@@ -9,10 +9,6 @@ const Plan = require('../models/planModel');
 // @access  Private/Admin
 const createPlan = asyncHandler(async (req, res) => {
   const { nombre, detalles, condiciones_generales } = req.body;
-  if (!nombre) {
-    res.status(400);
-    throw new Error('El nombre del plan es requerido.');
-  }
 
   const planId = await Plan.create({
     nombre,
@@ -52,11 +48,6 @@ const getPlanById = asyncHandler(async (req, res) => {
 const updatePlan = asyncHandler(async (req, res) => {
   const { nombre, detalles, condiciones_generales, activo } = req.body;
 
-  if (!nombre) {
-    res.status(400);
-    throw new Error('El nombre del plan es requerido.');
-  };
-
   const estadoActivo = (activo === true || activo === 1) ? 1 : 0;
 
   await Plan.update(req.params.id, {
@@ -65,6 +56,16 @@ const updatePlan = asyncHandler(async (req, res) => {
     condiciones_generales,
     activo: estadoActivo
   });
+
+  // Filtra campos undefined para que el PUT actualice solo lo que se envía
+  Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400);
+    throw new Error('No se enviaron datos para actualizar.');
+  }
+
+  await Plan.update(req.params.id, updateData);
 
   res.status(200).json({ message: 'Plan actualizado exitosamente.' });
 });

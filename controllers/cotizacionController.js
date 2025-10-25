@@ -1,12 +1,10 @@
 //============================================================================
 // CONTROLADOR DE COTIZACIONES
 //============================================================================
-
 const Cotizacion = require('../models/cotizacionModel');
 const Cliente = require('../models/clienteModel');
 const Plan = require('../models/planModel');
 const asyncHandler = require('express-async-handler');
-
 
 // @desc    Verificar si un cliente existe por DNI y su estado de cotización
 // @route   GET /api/cotizaciones/verify-dni/:dni
@@ -86,26 +84,11 @@ const createCotizacion = asyncHandler(async (req, res) => {
     const asesor_id = req.employee.legajo;
     let cliente_id;
 
-    if (!clienteData || !cotizacionData || !miembrosData) {
-        res.status(400);
-        throw new Error('Faltan datos de cliente, cotización o miembros.');
-    }
-
-    // VALIDACIÓN DE PLAN
-    const plan_id = cotizacionData.plan_id;
-    if (!plan_id) {
-        res.status(400);
-        throw new Error('No se especificó un plan_id.');
-    }
-
-    // Filtra para saber si esta activo
-    const plan = await Plan.getById(plan_id);
+    const plan = await Plan.getById(cotizacionData.plan_id);
     if (!plan) {
-        // Si el plan no existe O está inactivo, 'plan' será undefined
         res.status(400);
-        throw new Error(`El plan ID ${plan_id} no existe o no se encuentra activo.`);
+        throw new Error(`El plan ID ${cotizacionData.plan_id} no existe o no se encuentra activo.`);
     }
-
     // LÓGICA DE CLIENTE
     const clienteExistente = await Cliente.findByDni(clienteData.dni);
 
@@ -142,9 +125,18 @@ const createCotizacion = asyncHandler(async (req, res) => {
 // @access  Private (Asesor)
 const getCotizacionById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    // Obtengo el asesor que está logueado
+    const asesor_logueado_legajo = req.employee.legajo;
+
     const cotizacionCompleta = await Cotizacion.findCotizacionById(id);
 
     if (cotizacionCompleta) {
+
+        if (cotizacionCompleta.asesor_id !== asesor_logueado_legajo) {
+            res.status(403); // 403 Forbidden (Prohibido)
+            throw new Error('No tiene permisos para ver esta cotización.');
+        }
+
         res.status(200).json(cotizacionCompleta);
     } else {
         res.status(404);
@@ -172,26 +164,12 @@ const updateCotizacion = asyncHandler(async (req, res) => {
     const asesor_logueado_legajo = req.employee.legajo;
     const { cotizacionData, miembrosData } = req.body; // Recibimos el body completo
 
-    if (!cotizacionData || !miembrosData) {
-        res.status(400);
-        throw new Error('Faltan datos de cotización o miembros.');
-    }
-
-    // Validación de Plan
-    const plan_id = cotizacionData.plan_id;
-    if (!plan_id) {
-        res.status(400);
-        throw new Error('No se especificó un plan_id.');
-    }
-
-    const plan = await Plan.getById(plan_id)
+    const plan = await Plan.getById(cotizacionData.plan_id);
     if (!plan) {
-        // Si el plan no existe O está inactivo, 'plan' será undefined
         res.status(400);
-        throw new Error(`El plan ID ${plan_id} no existe o no se encuentra activo.`);
+        throw new Error(`El plan ID ${cotizacionData.plan_id} no existe o no se encuentra activo.`);
     }
 
-    // Verificar que la cotización existe y le pertenece al asesor 
     const cotizacion = await Cotizacion.findCotizacionById(id);
     if (!cotizacion) {
         res.status(404);
@@ -203,7 +181,6 @@ const updateCotizacion = asyncHandler(async (req, res) => {
         throw new Error('No autorizado para modificar esta cotización.');
     }
 
-    // Si todo está bien, llama al nuevo modelo de actualización completa
     const result = await Cotizacion.updateFullCotizacion(id, cotizacionData, miembrosData);
     res.status(200).json(result); // Devuelve { id: id, message: '...' }
 });

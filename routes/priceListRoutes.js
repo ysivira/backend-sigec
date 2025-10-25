@@ -16,6 +16,12 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { isAdmin } = require('../middleware/adminMiddleware');
 
+const {
+  checkValidation,
+  validatePriceUpdate,
+  validatePriceIncrease
+} = require('../middleware/validationMiddleware');
+
 //=============================================================================
 // --- Rutas de Administrador (Crear, Actualizar, Borrar) ---
 // Estas rutas requieren que el usuario sea un administrador
@@ -24,10 +30,23 @@ router.route('/')
   .post(protect, isAdmin, createPriceListBulk);
 
 router.route('/:id')
-  .put(protect, isAdmin, updatePriceEntry)
+  .put(
+    protect, 
+    isAdmin, 
+    validatePriceUpdate, 
+    checkValidation, 
+    updatePriceEntry
+  )
+  // Borrado lógico
   .delete(protect, isAdmin, deletePriceEntry);
 
-router.post('/increase', protect, isAdmin, applyMassiveIncrease);
+router.post('/increase', 
+  protect, 
+  isAdmin,
+  validatePriceIncrease,
+  checkValidation,
+  applyMassiveIncrease
+);
 
 //=============================================================================
 // --- Rutas de Lectura (Admin y Asesor) ---

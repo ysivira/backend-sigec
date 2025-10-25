@@ -1,7 +1,6 @@
 //============================================================================
 // ROUTES: PLANES
 //=============================================================================
-
 const express = require('express');
 const router = express.Router();
 const {
@@ -15,16 +14,40 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { isAdmin } = require('../middleware/adminMiddleware');
 
+const {
+  checkValidation,
+  validatePlanCreation,
+  validatePlanUpdate,
+} = require('../middleware/validationMiddleware');  
+
 // MIDLEWARE: Proteger todas las rutas y permitir solo a administradores
 router.use(protect, isAdmin);
 
-router.route('/')
-  .post(createPlan)
-  .get(getAllPlansAdmin);
+// GET /api/plans (Listar todos)
+router.get('/', getAllPlansAdmin);
 
-router.route('/:id')
-  .get(getPlanById)
-  .put(updatePlan)
-  .delete(deletePlan);
+// POST /api/plans (Crear Plan)
+router.post(
+  '/',
+  validatePlanCreation, 
+  checkValidation,      
+  createPlan            
+);
+
+// --- Rutas para un ID específico ---
+
+// GET /api/plans/:id (Ver detalle)
+router.get('/:id', getPlanById);
+
+// PUT /api/plans/:id (Actualizar Plan)
+router.put(
+  '/:id',
+  validatePlanUpdate, // APLICA REGLAS
+  checkValidation,    // CHEQUEA ERRORES
+  updatePlan          // SI PASA, VA AL CONTROLADOR
+);
+
+// DELETE /api/plans/:id (Borrado lógico)
+router.delete('/:id', deletePlan);
 
 module.exports = router;
