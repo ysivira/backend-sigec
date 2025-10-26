@@ -40,4 +40,4 @@ db.getConnection((err, connection) => {
 //====================================================
 // EXPORTO LA CONEXION PARA USARLA EN OTROS MODULOS
 //====================================================
-module.exports = db;
+module.exports = db.promise();

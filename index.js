@@ -60,7 +60,7 @@ app.use('/api/clientes', clienteRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
 
 //====================================================
-// MANEJO DE ERRORES 
+// MANEJO DE ERRORES (El "Atrapa-todo")
 //====================================================
 // Middleware 404 (si la ruta no existe)
 app.use(notFound);

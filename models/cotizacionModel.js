@@ -2,249 +2,236 @@
 // MODELO DE COTIZACION
 //=================================================================
 
-const db = require('../config/db');
+const pool = require('../config/db');
 
-const Cotizacion = {
+/**
+ * Crea la cotización completa (Cabecera y Miembros) en una transacción.
+ *
+ * @param {object} cotizacionData - Datos de la tabla 'cotizaciones' 
+ * @param {Array<object>} miembrosData - Array de miembros para 'miembros_cotizacion'.
+ * @returns {Promise<object>} - El resultado de la inserción.
+ */
+const createFullCotizacion = async (cotizacionData, miembrosData) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
 
-  // Función de búsqueda de la última cotización por DNI
-  findLastCotizationByDni: (dni) => {
-    return new Promise((resolve, reject) => {
-      const query = `
-        SELECT 
-          c.id AS cotizacion_id, c.fecha_creacion, c.estado,
-          p.nombre AS plan_nombre,
-          e.legajo AS asesor_legajo, e.nombre AS asesor_nombre, e.apellido AS asesor_apellido
-        FROM cotizaciones c
-        JOIN empleados e ON c.asesor_id = e.legajo
-        JOIN planes p ON c.plan_id = p.id
-        JOIN clientes cl ON c.cliente_id = cl.id
-        WHERE cl.dni = ? AND c.activo = 1
-        ORDER BY c.fecha_creacion DESC
-        LIMIT 1
-      `;
-      db.query(query, [dni], (err, results) => {
-        if (err) return reject(err);
-        resolve(results[0] || null);
-      });
-    });
-  },
+    // Inserta la Cabecera (cotizaciones)
+    const queryCabecera = `
+      INSERT INTO cotizaciones 
+      (cliente_id, asesor_id, plan_id, tipo_ingreso, es_casado, 
+       aporte_obra_social, descuento_comercial_pct, descuento_afinidad_pct, 
+       monotributo_categoria, monotributo_adherentes, comentarios, url_pdf, 
+       valor_base_plan, valor_descuento_comercial, valor_descuento_afinidad, 
+       sueldo_bruto, valor_aportes_estimados, valor_aporte_monotributo, 
+       valor_iva, valor_total, estado, activo) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cotizado', 1)
+    `;
 
-  // Crear cotización completa con miembros
-  createFullCotizacion: (cotizacionData, miembros) => {
-    return new Promise(async (resolve, reject) => {
+    // Usamos los nombres de columnas 
+    const [resultCabecera] = await connection.query(queryCabecera, [
+      cotizacionData.cliente_id, cotizacionData.asesor_id, cotizacionData.plan_id,
+      cotizacionData.tipo_ingreso, cotizacionData.es_casado,
+      cotizacionData.aporte_obra_social || null,
+      cotizacionData.descuento_comercial_pct || 0,
+      cotizacionData.descuento_afinidad_pct || 0,
+      cotizacionData.monotributo_categoria || null,
+      cotizacionData.monotributo_adherentes || 0,
+      cotizacionData.comentarios || null,
+      cotizacionData.url_pdf || null,
+      cotizacionData.valor_base_plan,
+      cotizacionData.valor_descuento_comercial,
+      cotizacionData.valor_descuento_afinidad,
+      cotizacionData.sueldo_bruto,
+      cotizacionData.valor_aportes_estimados,
+      cotizacionData.valor_aporte_monotributo,
+      cotizacionData.valor_iva,
+      cotizacionData.valor_total
+    ]);
 
-      try {
-        const {
-          cliente_id, asesor_id, plan_id, tipo_ingreso, sueldo_bruto,
-          categoria_monotributo, descuento_comercial, descuento_afinidad,
-          valor_total, estado, pdf_ruta_almacenamiento
-        } = cotizacionData;
+    const cotizacionId = resultCabecera.insertId;
 
-        const cotizacionQuery = `
-          INSERT INTO cotizaciones 
-          (cliente_id, asesor_id, plan_id, tipo_ingreso, sueldo_bruto, categoria_monotributo, 
-           descuento_comercial, descuento_afinidad, valor_total, fecha_creacion, estado, pdf_ruta_almacenamiento, activo) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
-        `;
+    // Insertar los Miembros (miembros_cotizacion)
+    const queryMiembros = `
+      INSERT INTO miembros_cotizacion 
+      (cotizacion_id, parentesco, edad, valor_individual) 
+      VALUES ?
+    `;
 
-        const cotizacionValues = [
-          cliente_id, asesor_id, plan_id, tipo_ingreso, sueldo_bruto || null,
-          categoria_monotributo || null, descuento_comercial || 0.00, descuento_afinidad || 0.00,
-          valor_total || 0.00, estado || 'cotizado', pdf_ruta_almacenamiento || null, 1
-        ];
+    const miembrosValues = miembrosData.map(m => [
+      cotizacionId,
+      m.parentesco,
+      m.edad,
+      m.valor_individual //valor individual del miembro
+    ]);
 
-        const cotizacionResult = await new Promise((res, rej) => {
-          db.query(cotizacionQuery, cotizacionValues, (err, result) => {
-            if (err) return rej(err);
-            res(result);
-          });
-        });
-        const cotizacionId = cotizacionResult.insertId;
+    await connection.query(queryMiembros, [miembrosValues]);
 
-        // Insertar miembros 
-        if (miembros && miembros.length > 0) {
-          const miembrosQuery = `
-              INSERT INTO miembros_cotizacion (cotizacion_id, parentesco, edad, valor_individual) 
-              VALUES ?
-          `;
-          const miembrosValues = miembros.map(m => [
-            cotizacionId, m.parentesco, m.edad, m.valor_individual || 0.00,
-          ]);
+    await connection.commit();
+    return { id: cotizacionId, message: 'Cotización creada exitosamente.' };
 
-          await new Promise((res, rej) => {
-            db.query(miembrosQuery, [miembrosValues], (err, result) => {
-              if (err) return rej(err);
-              res(result);
-            });
-          });
-        }
-
-        resolve({ id: cotizacionId, message: 'Cotización creada exitosamente' });
-
-      } catch (error) {
-        console.error('Error en createFullCotizacion:', error);
-        reject(new Error('Fallo en la secuencia de insercion de cotización/miembros.'));
-      }
-    });
-  },
-
-  //Buscar cotización por ID incluyendo miembros
-  findCotizacionById: (id) => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Obtener la cotización principal, el cliente y el plan
-        const cotizacionQuery = `
-          SELECT 
-            c.*, 
-            cl.dni, cl.nombres, cl.apellidos, cl.email, cl.telefono,
-            p.nombre as plan_nombre
-          FROM cotizaciones c
-          JOIN clientes cl ON c.cliente_id = cl.id
-          JOIN planes p ON c.plan_id = p.id
-          WHERE c.id = ?
-        `;
-        const [cotizacionResult] = await db.promise().query(cotizacionQuery, [id]);
-
-        if (!cotizacionResult || cotizacionResult.length === 0) {
-          return resolve(null); // No se encontró la cotización
-        }
-
-        const cotizacion = cotizacionResult[0];
-
-        // Obtener todos los miembros de esa cotización
-        const miembrosQuery = `
-          SELECT parentesco, edad, valor_individual 
-          FROM miembros_cotizacion 
-          WHERE cotizacion_id = ?
-        `;
-        const [miembrosResult] = await db.promise().query(miembrosQuery, [id]);
-
-        // Combinar todo en un solo objeto
-        const cotizacionCompleta = {
-          ...cotizacion,
-          miembros: miembrosResult
-        };
-
-        resolve(cotizacionCompleta);
-
-      } catch (error) {
-        reject(error);
-      }
-    });
-  },
-
-  // Buscar todas las cotizaciones de un asesor
-  findCotizacionesByAsesor: (asesorId) => {
-    return new Promise((resolve, reject) => {
-      const query = `
-        SELECT 
-          c.id, c.fecha_creacion, c.estado, c.valor_total,
-          cl.nombres AS cliente_nombres, 
-          cl.apellidos AS cliente_apellidos, 
-          cl.dni AS cliente_dni,
-          p.nombre AS plan_nombre,
-          COUNT(mc.id) AS cantidad_miembros 
-        FROM cotizaciones c
-        JOIN clientes cl ON c.cliente_id = cl.id
-        JOIN planes p ON c.plan_id = p.id
-        LEFT JOIN miembros_cotizacion mc ON c.id = mc.cotizacion_id
-        WHERE c.asesor_id = ? AND c.activo = 1
-        GROUP BY c.id
-        ORDER BY c.fecha_creacion DESC
-      `;
-      db.query(query, [asesorId], (err, results) => {
-        if (err) return reject(err);
-        resolve(results);
-      });
-    });
-  },
-
-  //Funcion para actualizar una cotización
-  updateFullCotizacion: (id, cotizacionData, miembrosData) => {
-    return new Promise((resolve, reject) => {
-      db.getConnection((err, connection) => {
-        if (err) return reject(err);
-
-        connection.beginTransaction(async (err) => {
-          if (err) {
-            connection.release();
-            return reject(err);
-          }
-
-          try {
-            // Actualizar el encabezado de la cotización 
-            const { 
-              plan_id, tipo_ingreso, sueldo_bruto, categoria_monotributo, 
-              descuento_comercial, descuento_afinidad, valor_total, estado 
-            } = cotizacionData;
-
-            const cotizacionQuery = `
-              UPDATE cotizaciones SET
-                plan_id = ?, tipo_ingreso = ?, sueldo_bruto = ?, categoria_monotributo = ?,
-                descuento_comercial = ?, descuento_afinidad = ?, valor_total = ?, estado = ?
-              WHERE id = ?
-            `;
-            await connection.promise().query(cotizacionQuery, [
-              plan_id, tipo_ingreso, sueldo_bruto, categoria_monotributo,
-              descuento_comercial, descuento_afinidad, valor_total, estado,
-              id // El ID de la cotización a actualizar
-            ]);
-
-            // Borrar todos los miembros antiguos 
-            const deleteQuery = 'DELETE FROM miembros_cotizacion WHERE cotizacion_id = ?';
-            await connection.promise().query(deleteQuery, [id]);
-
-            // Insertar todos los miembros nuevos 
-            if (miembrosData && miembrosData.length > 0) {
-              const miembroQuery = `
-                INSERT INTO miembros_cotizacion 
-                (cotizacion_id, parentesco, edad, valor_individual) 
-                VALUES ?
-              `;
-              const miembrosValues = miembrosData.map(m => [
-                id, // ID de la cotización a modificar
-                m.parentesco,
-                m.edad,
-                m.valor_individual || 0
-              ]);
-              await connection.promise().query(miembroQuery, [miembrosValues]);
-            }
-
-            // Confirmar transacción 
-            connection.commit((err) => {
-              if (err) {
-                return connection.rollback(() => {
-                  connection.release();
-                  reject(err);
-                });
-              }
-              connection.release();
-              resolve({ id: id, message: 'Cotización actualizada exitosamente' });
-            });
-
-          } catch (error) {
-            connection.rollback(() => {
-              connection.release();
-              reject(error);
-            });
-          }
-        });
-      });
-    });
-  },
-
-  // Función para anular una cotización
-  anularCotizacion: (id) => {
-    return new Promise((resolve, reject) => {
-      // Borrado lógico
-      const query = 'UPDATE cotizaciones SET activo = 0 WHERE id = ?';
-      db.query(query, [id], (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
-    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error en createFullCotizacion (Model):', error);
+    throw new Error('Error en el servidor al guardar la cotización.');
+  } finally {
+    connection.release();
   }
-
 };
 
-module.exports = Cotizacion;
+/**
+ * Actualiza la cotización completa (Cabecera y Miembros) en una transacción.
+ * (Actualizado a los nuevos campos de la DB)
+ *
+ * @param {number} cotizacionId - El ID de la cotización a actualizar.
+ * @param {object} cotizacionData - Datos de la tabla 'cotizaciones' 
+ * @param {Array<object>} miembrosData -  lista de miembros.
+ * @returns {Promise<object>}
+ */
+const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Actualiza la Cabecera (cotizaciones) 
+    const queryCabecera = `
+      UPDATE cotizaciones SET
+        plan_id = ?, tipo_ingreso = ?, es_casado = ?, 
+        aporte_obra_social = ?, descuento_comercial_pct = ?, descuento_afinidad_pct = ?, 
+        monotributo_categoria = ?, monotributo_adherentes = ?, comentarios = ?, 
+        valor_base_plan = ?, valor_descuento_comercial = ?, valor_descuento_afinidad = ?, 
+        sueldo_bruto = ?, valor_aportes_estimados = ?, valor_aporte_monotributo = ?, 
+        valor_iva = ?, valor_total = ?,
+        activo = 1, estado = 'cotizado' -- Reactivamos si estaba anulada
+      WHERE id = ?
+    `;
+
+    await connection.query(queryCabecera, [
+      cotizacionData.plan_id, cotizacionData.tipo_ingreso, cotizacionData.es_casado,
+      cotizacionData.aporte_obra_social || null,
+      cotizacionData.descuento_comercial_pct || 0,
+      cotizacionData.descuento_afinidad_pct || 0,
+      cotizacionData.monotributo_categoria || null,
+      cotizacionData.monotributo_adherentes || 0,
+      cotizacionData.comentarios || null,
+      cotizacionData.valor_base_plan,
+      cotizacionData.valor_descuento_comercial,
+      cotizacionData.valor_descuento_afinidad,
+      cotizacionData.sueldo_bruto,
+      cotizacionData.valor_aportes_estimados,
+      cotizacionData.valor_aporte_monotributo,
+      cotizacionData.valor_iva,
+      cotizacionData.valor_total,
+      cotizacionId
+    ]);
+
+    // Borrar Miembros Antiguos
+    await connection.query('DELETE FROM miembros_cotizacion WHERE cotizacion_id = ?', [cotizacionId]);
+
+    // Inserta Miembros Nuevos
+    const queryMiembros = `
+      INSERT INTO miembros_cotizacion 
+      (cotizacion_id, parentesco, edad, valor_individual) 
+      VALUES ?
+    `;
+    const miembrosValues = miembrosData.map(m => [
+      cotizacionId, m.parentesco, m.edad, m.valor_individual
+    ]);
+
+    await connection.query(queryMiembros, [miembrosValues]);
+
+    await connection.commit();
+    return { id: cotizacionId, message: 'Cotización actualizada exitosamente.' };
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error en updateFullCotizacion (Model):', error);
+    throw new Error('Error en el servidor al actualizar la cotización.');
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Busca la última cotización de un cliente por DNI (solo activos).
+ */
+const findLastCotizationByDni = async (dni) => {
+  const query = `
+    SELECT 
+      c.id AS cotizacion_id, c.fecha_creacion, c.asesor_id AS asesor_legajo,
+      e.nombre AS asesor_nombre, e.apellido AS asesor_apellido,
+      p.nombre AS plan_nombre
+    FROM cotizaciones c
+    JOIN empleados e ON c.asesor_id = e.legajo
+    JOIN planes p ON c.plan_id = p.id
+    JOIN clientes cl ON c.cliente_id = cl.id
+    WHERE cl.dni = ? AND c.activo = 1
+    ORDER BY c.fecha_creacion DESC
+    LIMIT 1
+  `;
+  const [rows] = await pool.query(query, [dni]);
+  return rows[0]; // Devuelve el objeto o undefined
+};
+
+/**
+ * Busca una cotización completa por su ID.
+ */
+const findCotizacionById = async (id) => {
+  // Obtener la cotización principal
+  const [cotizacionRows] = await pool.query('SELECT * FROM cotizaciones WHERE id = ?', [id]);
+  if (!cotizacionRows[0]) return undefined; // No se encontró
+  const cotizacion = cotizacionRows[0];
+
+  // Obtener los datos relacionados
+  const [clienteRows] = await pool.query('SELECT * FROM clientes WHERE id = ?', [cotizacion.cliente_id]);
+  const [miembrosRows] = await pool.query('SELECT * FROM miembros_cotizacion WHERE cotizacion_id = ?', [id]);
+  const [asesorRows] = await pool.query('SELECT legajo, nombre, apellido FROM empleados WHERE legajo = ?', [cotizacion.asesor_id]);
+  const [planRows] = await pool.query('SELECT * FROM planes WHERE id = ?', [cotizacion.plan_id]);
+
+  // Combinar todo
+  return {
+    ...cotizacion,
+    cliente: clienteRows[0] || null,
+    miembros: miembrosRows || [],
+    asesor: asesorRows[0] || null,
+    plan: planRows[0] || null
+  };
+};
+
+/**
+ * Busca todas las cotizaciones de un asesor (solo activos).
+ */
+const findCotizacionesByAsesor = async (asesorId) => {
+  const query = `
+    SELECT 
+      c.id, c.fecha_creacion, c.valor_total, c.estado, c.activo,
+      cl.nombres AS cliente_nombre, cl.apellidos AS cliente_apellido,
+      p.nombre AS plan_nombre
+    FROM cotizaciones c
+    JOIN clientes cl ON c.cliente_id = cl.id
+    JOIN planes p ON c.plan_id = p.id
+    WHERE c.asesor_id = ? AND c.activo = 1
+    ORDER BY c.fecha_creacion DESC
+  `;
+  const [rows] = await pool.query(query, [asesorId]);
+  return rows;
+};
+
+/**
+ * Anula (borrado lógico) una cotización.
+ */
+const anularCotizacion = async (id) => {
+  // Actualizamos 'activo' y 'estado' para coherencia
+  const query = "UPDATE cotizaciones SET activo = 0, estado = 'cancelado' WHERE id = ?";
+  const [result] = await pool.query(query, [id]);
+  return result;
+};
+
+module.exports = {
+  createFullCotizacion,
+  updateFullCotizacion,
+  findLastCotizationByDni,
+  findCotizacionById,
+  findCotizacionesByAsesor,
+  anularCotizacion
+};

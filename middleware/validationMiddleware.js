@@ -10,12 +10,12 @@ const { ROLES, ESTADOS_EMPLEADO } = require('../utils/constants');
 // Este middleware es el que revisa si alguna de las reglas definidas falla
 const checkValidation = (req, res, next) => {
   const errors = validationResult(req);
-  
+
   // Si hay errores, los detiene ANTES de llegar al controlador
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  
+
   // Si no hay errores, ¡sigue hacia el controlador!
   next();
 };
@@ -77,7 +77,7 @@ const validateEmployeeUpdate = [
     .optional()
     .isIn(Object.values(ESTADOS_EMPLEADO))
     .withMessage(`El estado debe ser uno de: ${Object.values(ESTADOS_EMPLEADO).join(', ')}`),
-  
+
   body('rol')
     .optional()
     .isIn(Object.values(ROLES))
@@ -138,11 +138,11 @@ const validatePlanCreation = [
     .notEmpty().withMessage('El nombre es requerido.')
     .isString().withMessage('El nombre debe ser texto.')
     .isLength({ min: 3, max: 50 }).withMessage('El nombre debe tener entre 3 y 50 caracteres.'),
-    
+
   body('detalles')
     .optional() // Permitimos que 'detalles' esté vacío
     .isString().withMessage('Los detalles deben ser texto.'),
-    
+
   body('condiciones_generales')
     .optional() // Permitimos que 'condiciones_generales' esté vacío
     .isString().withMessage('Las condiciones deben ser texto.')
@@ -152,18 +152,18 @@ const validatePlanCreation = [
 
 const validatePlanUpdate = [
   body('nombre')
-    .optional() 
+    .optional()
     .isString().withMessage('El nombre debe ser texto.')
     .isLength({ min: 3, max: 50 }).withMessage('El nombre debe tener entre 3 y 50 caracteres.'),
-    
+
   body('detalles')
     .optional()
     .isString().withMessage('Los detalles deben ser texto.'),
-    
+
   body('condiciones_generales')
     .optional()
     .isString().withMessage('Las condiciones deben ser texto.'),
-    
+
   body('activo')
     .optional()
     .isBoolean().withMessage("El campo 'activo' debe ser un booleano (true o false).")
@@ -179,7 +179,7 @@ const validatePriceUpdate = [
     .optional()
     .isString().withMessage('El rango_etario debe ser texto.')
     .notEmpty().withMessage('El rango_etario no puede estar vacío.'),
-    
+
   body('precio')
     .optional()
     .isDecimal({ decimal_digits: '2' }).withMessage('El precio debe ser un número con hasta 2 decimales.')
@@ -192,7 +192,7 @@ const validatePriceIncrease = [
     .notEmpty().withMessage('El porcentaje es requerido.')
     .isFloat({ gt: 0 }).withMessage('El porcentaje debe ser un número mayor a 0.')
     .toFloat(), // Convierte a número
-    
+
   body('tipo_ingreso')
     .notEmpty().withMessage('El tipo_ingreso es requerido.')
     .isIn(['Obligatorio', 'Voluntario', 'Ambas'])
@@ -202,42 +202,87 @@ const validatePriceIncrease = [
 // =======================================================
 // REGLAS PARA COTIZACIONES
 // =======================================================
+const {
+  TIPOS_INGRESO,
+  PARENTESCOS,
+  DESCUENTOS_COMERCIALES,
+  DESCUENTOS_AFINIDAD,
+  CATEGORIAS_MONOTRIBUTO
+} = require('../utils/constants');
 
-// (Usare las mismas reglas para Crear y Actualizar,
-// ya que la lógica del controlador es casi idéntica)
+// --- Reglas para CREAR/ACTUALIZAR COTIZACION ---
 const validateCotizacion = [
   // Valida los 3 objetos principales
   body('clienteData')
-    .notEmpty().withMessage('El objeto "clienteData" es requerido.')
     .isObject().withMessage('clienteData debe ser un objeto.'),
-    
   body('cotizacionData')
-    .notEmpty().withMessage('El objeto "cotizacionData" es requerido.')
     .isObject().withMessage('cotizacionData debe ser un objeto.'),
-    
   body('miembrosData')
-    .notEmpty().withMessage('El array "miembrosData" es requerido.')
     .isArray({ min: 1 }).withMessage('Debe haber al menos un miembro en la cotización.'),
- 
-  // Reglas para clienteData (lo mínimo para crear/buscar)
+
+  // Valida clienteData (solo formato, no obligatoriedad)
   body('clienteData.dni')
-    .notEmpty().withMessage('clienteData.dni es requerido.')
+    .notEmpty().withMessage('El DNI del cliente es requerido.')
     .isNumeric().withMessage('El DNI debe ser numérico.'),
-    
-  // Reglas para cotizacionData
+  body('clienteData.nombres')
+    .optional().isString().matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El nombre solo debe contener letras.'),
+  body('clienteData.apellidos')
+    .optional().isString().matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El apellido solo debe contener letras.'),
+  body('clienteData.email')
+    .optional().isEmail().withMessage('El email del cliente no es válido.'),
+  body('clienteData.telefono')
+    .optional().isNumeric().withMessage('El teléfono del cliente debe ser numérico.'),
+
+  // Valida cotizacionData
   body('cotizacionData.plan_id')
     .notEmpty().withMessage('cotizacionData.plan_id es requerido.')
     .isInt({ min: 1 }).withMessage('El plan_id debe ser un número entero positivo.'),
-    
+
   body('cotizacionData.tipo_ingreso')
     .notEmpty().withMessage('cotizacionData.tipo_ingreso es requerido.')
-    .isIn(['Obligatorio', 'Voluntario']).withMessage("tipo_ingreso debe ser 'Obligatorio' o 'Voluntario'."),
+    .isIn(Object.values(TIPOS_INGRESO))
+    .withMessage(`tipo_ingreso debe ser uno de: ${Object.values(TIPOS_INGRESO).join(', ')}`),
 
-  // Reglas para miembrosData (cada miembro del array)
+  body('cotizacionData.es_casado')
+    .exists().withMessage('cotizacionData.es_casado es requerido (true o false).')
+    .isBoolean().withMessage('es_casado debe ser un valor booleano.'),
+
+  body('cotizacionData.descuento_comercial_pct')
+    .notEmpty().withMessage('cotizacionData.descuento_comercial_pct es requerido.')
+    .isNumeric().isIn(DESCUENTOS_COMERCIALES)
+    .withMessage(`descuento_comercial_pct debe ser uno de: ${DESCUENTOS_COMERCIALES.join(', ')}`),
+
+  body('cotizacionData.descuento_afinidad_pct')
+    .notEmpty().withMessage('cotizacionData.descuento_afinidad_pct es requerido.')
+    .isNumeric().isIn(DESCUENTOS_AFINIDAD)
+    .withMessage(`descuento_afinidad_pct debe ser uno de: ${DESCUENTOS_AFINIDAD.join(', ')}`),
+
+  // Valida campos condicionales
+  body('cotizacionData.aporte_obra_social')
+    .custom((value, { req }) => {
+      if (req.body.cotizacionData.tipo_ingreso === 'Obligatorio' && (!value || parseFloat(value) <= 0)) {
+        throw new Error('aporte_obra_social es requerido y debe ser mayor a 0 para tipo Obligatorio.');
+      }
+      return true;
+    }),
+
+  body('cotizacionData.monotributo_categoria')
+    .custom((value, { req }) => {
+      if (req.body.cotizacionData.tipo_ingreso === 'Monotributo' && !value) {
+        throw new Error('monotributo_categoria es requerida para tipo Monotributo.');
+      }
+      if (value && !CATEGORIAS_MONOTRIBUTO.includes(value)) {
+        throw new Error(`monotributo_categoria debe ser una de: ${CATEGORIAS_MONOTRIBUTO.join(', ')}`);
+      }
+      return true;
+    }),
+
+  // Valida Miembros
   body('miembrosData.*.parentesco')
     .notEmpty().withMessage('El parentesco es requerido para todos los miembros.')
-    .isString().withMessage('El parentesco debe ser texto.'),
-    
+    .isIn(Object.values(PARENTESCOS))
+    .withMessage(`El parentesco debe ser uno de: ${Object.values(PARENTESCOS).join(', ')}`),
+
   body('miembrosData.*.edad')
     .notEmpty().withMessage('La edad es requerida para todos los miembros.')
     .isInt({ min: 0, max: 100 }).withMessage('La edad debe ser un número entre 0 y 100.')
@@ -255,5 +300,4 @@ module.exports = {
   validatePriceUpdate,
   validatePriceIncrease,
   validateCotizacion
-
 };
