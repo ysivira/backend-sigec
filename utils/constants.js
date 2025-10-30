@@ -36,6 +36,12 @@ const TIPOS_INGRESO = {
   MONOTRIBUTO: 'Monotributo'
 };
 
+const OTROS_DESCUENTOS_OPCIONES = [
+  'N/A',
+  'Tarjeta de credito', // 5%
+  'Joven'             // 30%
+];
+
 module.exports = {
   ROLES,
   TIPOS_LISTA,
@@ -44,5 +50,6 @@ module.exports = {
   DESCUENTOS_COMERCIALES,
   DESCUENTOS_AFINIDAD,
   CATEGORIAS_MONOTRIBUTO,
-  TIPOS_INGRESO
+  TIPOS_INGRESO,
+  OTROS_DESCUENTOS_OPCIONES
 };

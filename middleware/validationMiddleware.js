@@ -2,7 +2,16 @@
 // VALIDACIONES
 // =======================================================
 const { body, validationResult } = require('express-validator');
-const { ROLES, ESTADOS_EMPLEADO } = require('../utils/constants');
+const {
+  ROLES,
+  ESTADOS_EMPLEADO,
+  TIPOS_INGRESO,
+  PARENTESCOS,
+  DESCUENTOS_COMERCIALES,
+  DESCUENTOS_AFINIDAD,
+  CATEGORIAS_MONOTRIBUTO,
+  OTROS_DESCUENTOS_OPCIONES
+} = require('../utils/constants');
 
 // =======================================================
 // REVISADOR GENERAL DE REGLAS
@@ -22,9 +31,7 @@ const checkValidation = (req, res, next) => {
 
 
 // =======================================================
-// PAQUETES DE REGLAS
-// =======================================================
-
+// PAQUETES DE REGLAS GENERALES
 // =======================================================
 // REGLAS PARA EMPLEADOS
 // =======================================================
@@ -202,13 +209,6 @@ const validatePriceIncrease = [
 // =======================================================
 // REGLAS PARA COTIZACIONES
 // =======================================================
-const {
-  TIPOS_INGRESO,
-  PARENTESCOS,
-  DESCUENTOS_COMERCIALES,
-  DESCUENTOS_AFINIDAD,
-  CATEGORIAS_MONOTRIBUTO
-} = require('../utils/constants');
 
 // --- Reglas para CREAR/ACTUALIZAR COTIZACION ---
 const validateCotizacion = [
@@ -256,6 +256,11 @@ const validateCotizacion = [
     .notEmpty().withMessage('cotizacionData.descuento_afinidad_pct es requerido.')
     .isNumeric().isIn(DESCUENTOS_AFINIDAD)
     .withMessage(`descuento_afinidad_pct debe ser uno de: ${DESCUENTOS_AFINIDAD.join(', ')}`),
+
+  body('cotizacionData.descuento_otros_opcion')
+    .optional({ checkFalsy: true }) // Permite '', null o undefined
+    .isIn(OTROS_DESCUENTOS_OPCIONES)
+    .withMessage(`Opción de Otros Descuentos inválida. Valores permitidos: ${OTROS_DESCUENTOS_OPCIONES.join(', ')}`),
 
   // Valida campos condicionales
   body('cotizacionData.aporte_obra_social')

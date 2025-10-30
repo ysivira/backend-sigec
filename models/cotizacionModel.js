@@ -18,27 +18,31 @@ const createFullCotizacion = async (cotizacionData, miembrosData) => {
 
     // Inserta la Cabecera (cotizaciones)
     const queryCabecera = `
-      INSERT INTO cotizaciones 
-      (cliente_id, asesor_id, plan_id, tipo_ingreso, es_casado, 
-       aporte_obra_social, descuento_comercial_pct, descuento_afinidad_pct, 
-       monotributo_categoria, monotributo_adherentes, comentarios, url_pdf, 
-       valor_base_plan, valor_descuento_comercial, valor_descuento_afinidad, 
-       sueldo_bruto, valor_aportes_estimados, valor_aporte_monotributo, 
-       valor_iva, valor_total, estado, activo) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cotizado', 1)
-    `;
-
-    // Usamos los nombres de columnas 
+     INSERT INTO cotizaciones
+        (cliente_id, asesor_id, plan_id, tipo_ingreso, es_casado,
+        aporte_obra_social, descuento_comercial_pct, descuento_afinidad_pct,
+        descuento_joven_pct, valor_descuento_joven, 
+        descuento_tarjeta_pct, valor_descuento_tarjeta,
+        monotributo_categoria, monotributo_adherentes, comentarios, url_pdf,
+        valor_base_plan, valor_descuento_comercial, valor_descuento_afinidad,
+        sueldo_bruto, valor_aportes_estimados, valor_aporte_monotributo,
+        valor_iva, valor_total, estado, activo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cotizado', 1) 
+      `;
     const [resultCabecera] = await connection.query(queryCabecera, [
       cotizacionData.cliente_id, cotizacionData.asesor_id, cotizacionData.plan_id,
       cotizacionData.tipo_ingreso, cotizacionData.es_casado,
       cotizacionData.aporte_obra_social || null,
       cotizacionData.descuento_comercial_pct || 0,
       cotizacionData.descuento_afinidad_pct || 0,
+      cotizacionData.descuento_joven_pct || 0,
+      cotizacionData.valor_descuento_joven || 0,
+      cotizacionData.descuento_tarjeta_pct || 0,
+      cotizacionData.valor_descuento_tarjeta || 0,
       cotizacionData.monotributo_categoria || null,
       cotizacionData.monotributo_adherentes || 0,
       cotizacionData.comentarios || null,
-      cotizacionData.url_pdf || null,
+      null, // URL PDF se actualiza luego
       cotizacionData.valor_base_plan,
       cotizacionData.valor_descuento_comercial,
       cotizacionData.valor_descuento_afinidad,
@@ -51,20 +55,25 @@ const createFullCotizacion = async (cotizacionData, miembrosData) => {
 
     const cotizacionId = resultCabecera.insertId;
 
-    // Insertar los Miembros (miembros_cotizacion)
+    // Actualiza la cotización que acaba de crear con su propia URL.
+    const url_pdf = `/api/cotizaciones/${cotizacionId}/pdf`;
+    await connection.query('UPDATE cotizaciones SET url_pdf = ? WHERE id = ?', [
+      url_pdf,
+      cotizacionId,
+    ]);
+
+    // 2. Insertar los Miembros
     const queryMiembros = `
       INSERT INTO miembros_cotizacion 
       (cotizacion_id, parentesco, edad, valor_individual) 
       VALUES ?
     `;
-
     const miembrosValues = miembrosData.map(m => [
       cotizacionId,
       m.parentesco,
       m.edad,
-      m.valor_individual //valor individual del miembro
+      parseFloat(m.valor_individual) || 0
     ]);
-
     await connection.query(queryMiembros, [miembrosValues]);
 
     await connection.commit();
@@ -81,11 +90,10 @@ const createFullCotizacion = async (cotizacionData, miembrosData) => {
 
 /**
  * Actualiza la cotización completa (Cabecera y Miembros) en una transacción.
- * (Actualizado a los nuevos campos de la DB)
  *
- * @param {number} cotizacionId - El ID de la cotización a actualizar.
- * @param {object} cotizacionData - Datos de la tabla 'cotizaciones' 
- * @param {Array<object>} miembrosData -  lista de miembros.
+ * @param {number} cotizacionId // ID de la cotización a actualizar
+ * @param {object} cotizacionData // Datos de la tabla 'cotizaciones'
+ * @param {Array<object>} miembrosData // Array de miembros para 'miembros_cotizacion'.
  * @returns {Promise<object>}
  */
 const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) => {
@@ -93,35 +101,44 @@ const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) 
   try {
     await connection.beginTransaction();
 
+    const url_pdf = `/api/cotizaciones/${cotizacionId}/pdf`;
+
     // Actualiza la Cabecera (cotizaciones) 
     const queryCabecera = `
       UPDATE cotizaciones SET
-        plan_id = ?, tipo_ingreso = ?, es_casado = ?, 
-        aporte_obra_social = ?, descuento_comercial_pct = ?, descuento_afinidad_pct = ?, 
-        monotributo_categoria = ?, monotributo_adherentes = ?, comentarios = ?, 
-        valor_base_plan = ?, valor_descuento_comercial = ?, valor_descuento_afinidad = ?, 
-        sueldo_bruto = ?, valor_aportes_estimados = ?, valor_aporte_monotributo = ?, 
+        plan_id = ?, tipo_ingreso = ?, es_casado = ?,
+        aporte_obra_social = ?, descuento_comercial_pct = ?, descuento_afinidad_pct = ?,
+        descuento_joven_pct = ?, valor_descuento_joven = ?, descuento_tarjeta_pct = ?, valor_descuento_tarjeta = ?,
+        monotributo_categoria = ?, monotributo_adherentes = ?, comentarios = ?,
+        valor_base_plan = ?, valor_descuento_comercial = ?, valor_descuento_afinidad = ?,
+        sueldo_bruto = ?, valor_aportes_estimados = ?, valor_aporte_monotributo = ?,
         valor_iva = ?, valor_total = ?,
-        activo = 1, estado = 'cotizado' -- Reactivamos si estaba anulada
+        url_pdf = ?,
+        activo = 1, estado = 'cotizado'
       WHERE id = ?
     `;
 
     await connection.query(queryCabecera, [
       cotizacionData.plan_id, cotizacionData.tipo_ingreso, cotizacionData.es_casado,
-      cotizacionData.aporte_obra_social || null,
+      cotizacionData.aporte_obra_social || 0,
       cotizacionData.descuento_comercial_pct || 0,
       cotizacionData.descuento_afinidad_pct || 0,
+      cotizacionData.descuento_joven_pct || 0,
+      cotizacionData.valor_descuento_joven || 0,
+      cotizacionData.descuento_tarjeta_pct || 0,
+      cotizacionData.valor_descuento_tarjeta || 0,
       cotizacionData.monotributo_categoria || null,
       cotizacionData.monotributo_adherentes || 0,
       cotizacionData.comentarios || null,
-      cotizacionData.valor_base_plan,
-      cotizacionData.valor_descuento_comercial,
-      cotizacionData.valor_descuento_afinidad,
-      cotizacionData.sueldo_bruto,
-      cotizacionData.valor_aportes_estimados,
-      cotizacionData.valor_aporte_monotributo,
-      cotizacionData.valor_iva,
-      cotizacionData.valor_total,
+      cotizacionData.valor_base_plan || 0,
+      cotizacionData.valor_descuento_comercial || 0,
+      cotizacionData.valor_descuento_afinidad || 0,
+      cotizacionData.sueldo_bruto || 0,
+      cotizacionData.valor_aportes_estimados || 0,
+      cotizacionData.valor_aporte_monotributo || 0,
+      cotizacionData.valor_iva || 0,
+      cotizacionData.valor_total || 0,
+      url_pdf,
       cotizacionId
     ]);
 
@@ -129,16 +146,19 @@ const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) 
     await connection.query('DELETE FROM miembros_cotizacion WHERE cotizacion_id = ?', [cotizacionId]);
 
     // Inserta Miembros Nuevos
-    const queryMiembros = `
-      INSERT INTO miembros_cotizacion 
-      (cotizacion_id, parentesco, edad, valor_individual) 
-      VALUES ?
-    `;
-    const miembrosValues = miembrosData.map(m => [
-      cotizacionId, m.parentesco, m.edad, m.valor_individual
-    ]);
+    if (miembrosData && miembrosData.length > 0) {
+      const queryMiembros = `
+        INSERT INTO miembros_cotizacion
+        (cotizacion_id, parentesco, edad, valor_individual)
+        VALUES ?
+        `;
 
-    await connection.query(queryMiembros, [miembrosValues]);
+      const miembrosValues = miembrosData.map(m => [
+        cotizacionId, m.parentesco, m.edad,
+        parseFloat(m.valor_individual) || 0
+      ]);
+      await connection.query(queryMiembros, [miembrosValues]);
+    }
 
     await connection.commit();
     return { id: cotizacionId, message: 'Cotización actualizada exitosamente.' };
@@ -184,8 +204,8 @@ const findCotizacionById = async (id) => {
 
   // Obtener los datos relacionados
   const [clienteRows] = await pool.query('SELECT * FROM clientes WHERE id = ?', [cotizacion.cliente_id]);
-  const [miembrosRows] = await pool.query('SELECT * FROM miembros_cotizacion WHERE cotizacion_id = ?', [id]);
-  const [asesorRows] = await pool.query('SELECT legajo, nombre, apellido FROM empleados WHERE legajo = ?', [cotizacion.asesor_id]);
+  const [miembrosRows] = await pool.query(`SELECT * FROM miembros_cotizacion WHERE cotizacion_id = ? ORDER BY FIELD(parentesco, 'Titular', 'Conyuge', 'Hijo')`, [id]);
+  const [asesorRows] = await pool.query('SELECT legajo, nombre, apellido, email, telefono FROM empleados WHERE legajo = ?', [cotizacion.asesor_id]);
   const [planRows] = await pool.query('SELECT * FROM planes WHERE id = ?', [cotizacion.plan_id]);
 
   // Combinar todo
@@ -193,8 +213,14 @@ const findCotizacionById = async (id) => {
     ...cotizacion,
     cliente: clienteRows[0] || null,
     miembros: miembrosRows || [],
-    asesor: asesorRows[0] || null,
-    plan: planRows[0] || null
+    plan: planRows[0] || null,
+    asesor: {
+      legajo: asesorRows[0]?.legajo,
+      nombre: asesorRows[0]?.nombre,
+      apellido: asesorRows[0]?.apellido,
+      email: asesorRows[0]?.email,
+      telefono: asesorRows[0]?.telefono,
+    }
   };
 };
 
@@ -227,11 +253,38 @@ const anularCotizacion = async (id) => {
   return result;
 };
 
+/**
+* Busca una cotización ACTIVA por cliente, asesor, plan 
+* Y cantidad de miembros.
+* Se usa para prevenir duplicados exactos.
+*/
+const findActiveCotizacionByPlanAndMemberCount = async (cliente_id, asesor_id, plan_id, member_count) => {
+  const query = `
+SELECT c.id
+ FROM cotizaciones c
+ -- Hacemos un subquery para contar los miembros de cada cotización
+  JOIN (
+  SELECT cotizacion_id, COUNT(*) AS conteo
+  FROM miembros_cotizacion
+  GROUP BY cotizacion_id ) mc
+  ON c.id = mc.cotizacion_id
+  WHERE c.cliente_id = ? 
+  AND c.asesor_id = ? 
+  AND c.plan_id = ? 
+  AND c.activo = 1
+  AND mc.conteo = ? -- Validamos también el conteo de miembros
+  LIMIT 1
+ `;
+  const [rows] = await pool.query(query, [cliente_id, asesor_id, plan_id, member_count]);
+  return rows[0]; // Devuelve { id: 123 } o undefined
+};
+
 module.exports = {
   createFullCotizacion,
   updateFullCotizacion,
   findLastCotizationByDni,
   findCotizacionById,
   findCotizacionesByAsesor,
-  anularCotizacion
+  anularCotizacion,
+  findActiveCotizacionByPlanAndMemberCount
 };

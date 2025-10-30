@@ -7,10 +7,11 @@ const Cotizacion = require('../models/cotizacionModel');
 const Cliente = require('../models/clienteModel');
 const Plan = require('../models/planModel');
 const calculoService = require('../service/calculoService');
+const pdfService = require('../service/pdfService');
 
-// @desc    Verificar si un DNI ya tiene cotización
-// @route   GET /api/cotizaciones/verify-dni/:dni
-// @access  Private (Asesor)
+// @desc    Verificar si un DNI ya tiene cotización
+// @route   GET /api/cotizaciones/verify-dni/:dni
+// @access  Private (Asesor)
 const verifyDni = asyncHandler(async (req, res) => {
     let { dni } = req.params;
     dni = dni.replace(':', '');
@@ -47,16 +48,14 @@ const verifyDni = asyncHandler(async (req, res) => {
 
     const asesorCotizadorLegajo = ultimaCotizacion.asesor_legajo;
     if (asesorCotizadorLegajo === asesor_logueado_legajo) {
+        const cotizacionCompleta = await Cotizacion.findCotizacionById(ultimaCotizacion.cotizacion_id);
+
         return res.status(200).json({
             existe: true,
             cotizado_por_mi: true,
             message: 'Cliente ya cotizado por usted. Puede modificar la última cotización o crear una nueva.',
             ...baseResponse,
-            ultima_cotizacion: {
-                id: ultimaCotizacion.cotizacion_id,
-                plan: ultimaCotizacion.plan_nombre,
-                fecha_registro: ultimaCotizacion.fecha_creacion,
-            }
+            datosParaRecotizar: cotizacionCompleta
         });
     } else {
         const fechaFormateada = ultimaCotizacion.fecha_creacion ? new Date(ultimaCotizacion.fecha_creacion).toLocaleDateString('es-AR') : 'Fecha no disponible';
@@ -70,10 +69,10 @@ const verifyDni = asyncHandler(async (req, res) => {
                 apellido: ultimaCotizacion.asesor_apellido,
             },
             fecha_cotizacion: ultimaCotizacion.fecha_creacion,
+            datosParaRecotizar: null
         });
     }
 });
-
 
 /**
  * Función auxiliar para gestionar la lógica de "Buscar o Crear Cliente".
@@ -100,10 +99,9 @@ const _getClienteId = async (clienteData, asesor_id) => {
     return resultCliente.insertId;
 };
 
-
-// @desc    Crear una nueva cotización
-// @route   POST /api/cotizaciones
-// @access  Private (Asesor)
+// @desc    Crear una nueva cotización
+// @route   POST /api/cotizaciones
+// @access  Private (Asesor)
 const createCotizacion = asyncHandler(async (req, res) => {
     const { clienteData, cotizacionData, miembrosData } = req.body;
     const asesor_id = req.employee.legajo;
@@ -122,12 +120,29 @@ const createCotizacion = asyncHandler(async (req, res) => {
         throw new Error('Error al procesar el ID del cliente.');
     }
 
+    const { plan_id } = cotizacionData;
+    const nuevoConteoMiembros = miembrosData ? miembrosData.length : 0;
+
+    if (nuevoConteoMiembros > 0) {
+        const duplicado = await Cotizacion.findActiveCotizacionByPlanAndMemberCount(
+            cliente_id,
+            asesor_id,
+            plan_id,
+            nuevoConteoMiembros
+        );
+
+        if (duplicado) {
+            res.status(409); // 409 Conflict (Conflicto)
+            throw new Error(`Ya existe una cotización activa (ID: ${duplicado.id}) para este cliente, este plan y la misma cantidad de miembros. Por favor, anule la cotización anterior si desea crear una nueva.`);
+        }
+    }
+
     const { cotizacionCalculada, miembrosConPrecios } = await calculoService.calcularCotizacion(
         cotizacionData,
         miembrosData
     );
 
-    //  Prepara el objeto final para la DB
+    //  Prepara el objeto final para la DB
     const fullCotizacionData = {
         ...cotizacionCalculada,
         cliente_id: cliente_id,
@@ -140,9 +155,9 @@ const createCotizacion = asyncHandler(async (req, res) => {
 });
 
 
-// @desc    Actualizar una cotización
-// @route   PUT /api/cotizaciones/:id
-// @access  Private
+// @desc    Actualizar una cotización
+// @route   PUT /api/cotizaciones/:id
+// @access  Private
 const updateCotizacion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -157,6 +172,7 @@ const updateCotizacion = asyncHandler(async (req, res) => {
     if (cotizacionExistente.asesor_id !== asesor_logueado_legajo) {
         res.status(403);
         throw new Error('No autorizado para modificar esta cotización.');
+        T
     }
     // Gestión de Cliente (Buscar o Crear)
     const { cotizacionCalculada, miembrosConPrecios } = await calculoService.calcularCotizacion(
@@ -169,9 +185,9 @@ const updateCotizacion = asyncHandler(async (req, res) => {
     res.status(200).json(result);
 });
 
-// @desc    Obtener una cotización completa por ID
-// @route   GET /api/cotizaciones/:id
-// @access  Private (Asesor)
+// @desc    Obtener una cotización completa por ID
+// @route   GET /api/cotizaciones/:id
+// @access  Private (Asesor)
 const getCotizacionById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -220,11 +236,59 @@ const anularCotizacion = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Generar y descargar una cotización en PDF
+// @route   GET /api/cotizaciones/:id/pdf
+// @access  Private (Asesor)
+const getCotizacionPDF = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const asesor_logueado_legajo = req.employee.legajo;
+
+    // Obtener los datos completos (Protegido por asyncHandler)
+    const cotizacionCompleta = await Cotizacion.findCotizacionById(id);
+
+    // Validar que exista (Protegido por asyncHandler)
+    if (!cotizacionCompleta) {
+        res.status(404);
+        throw new Error('Cotización no encontrada.');
+    }
+
+    // Validar permisos (Protegido por asyncHandler)
+    if (cotizacionCompleta.asesor_id !== asesor_logueado_legajo) {
+        res.status(403);
+        throw new Error('No tiene permisos para ver esta cotización.');
+    }
+
+    try {
+        // Preparar la respuesta HTTP para que el navegador descargue un PDF
+        const nombreArchivo = `Cotizacion_${cotizacionCompleta.id}_${cotizacionCompleta.cliente.dni}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
+
+        // Crear el pdf y enviarlo en la respuesta
+        // Si esto falla (ej: TypeError), el catch local lo atrapará.
+        pdfService.generarCotizacionPDF(cotizacionCompleta, res);
+
+    } catch (error) {
+        // Error síncrono durante la generación del PDF
+        console.error("Error síncrono en getCotizacionPDF:", error);
+
+        // Si 'headersSent' es true, el stream ya empezó. No podemos enviar JSON. Solo podemos destruir el stream.
+        if (res.headersSent) {
+            res.destroy(error);
+        } else {
+            // Si los headers no se enviaron, algo falló antes.
+            res.destroy(error);
+        }
+    }
+});
+
 module.exports = {
     verifyDni,
     createCotizacion,
     getCotizacionById,
     getCotizacionesByAsesor,
     updateCotizacion,
-    anularCotizacion
+    anularCotizacion,
+    getCotizacionPDF
 };
+

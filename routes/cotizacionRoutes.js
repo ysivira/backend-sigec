@@ -9,7 +9,8 @@ const {
     getCotizacionById,
     getCotizacionesByAsesor,
     updateCotizacion,
-    anularCotizacion
+    anularCotizacion,
+    getCotizacionPDF
 } = require('../controllers/cotizacionController');
 const { protect } = require('../middleware/authMiddleware');
 const {
@@ -32,6 +33,9 @@ router.post('/',
     checkValidation,
     createCotizacion
 );
+
+// Ruta para generar el PDF
+router.get('/:id/pdf', getCotizacionPDF);
 
 // Ruta para anular una cotización
 router.delete('/:id', anularCotizacion);
