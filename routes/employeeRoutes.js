@@ -10,8 +10,10 @@ const {
   getAllEmployees, 
   updateEmployeeDetails, 
   getMyProfile, 
-  confirmEmployeeEmail 
-} = require('../controllers/employeeController.js');
+  confirmEmployeeEmail,
+  forgotPassword,
+  resetPassword
+  } = require('../controllers/employeeController.js');
 const { 
   validateEmployeeRegistration, 
   validateEmployeeLogin, 
@@ -63,5 +65,9 @@ router.put('/:legajo',
   checkValidation,             
   updateEmployeeDetails
 );
+
+// --- Rutas de Reseteo de Contraseña ---
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 module.exports = router;

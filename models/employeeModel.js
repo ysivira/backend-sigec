@@ -1,7 +1,6 @@
 //============================================================================
 // MODELO DE EMPLEADO
 //============================================================================= 
-
 const pool = require('../config/db');
 
 /**
@@ -112,10 +111,75 @@ const confirmEmail = async (legajo) => {
   return result;
 };
 
+/**
+ * Busca un empleado por su email (para forgotPassword).
+ */
+const findByEmail = async (email) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM empleados WHERE email = ? AND estado = 1', [email]);
+    return rows[0];
+  } catch (error) {
+    console.error('Error en findByEmail (Model):', error);
+    throw new Error('Error al buscar empleado por email.');
+  }
+};
+
+/**
+ * Guarda el token de reseteo y su expiración en la DB.
+ */
+const saveResetToken = async (legajo, token, expires) => {
+  try {
+    const [result] = await pool.query(
+      'UPDATE empleados SET reset_password_token = ?, reset_password_expires = ? WHERE legajo = ?',
+      [token, expires, legajo]
+    );
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error('Error en saveResetToken (Model):', error);
+    throw new Error('Error al guardar el token de reseteo.');
+  }
+};
+
+/**
+ * Busca un empleado por su token de reseteo VÁLIDO (no expirado).
+ */
+const findByResetToken = async (token) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM empleados WHERE reset_password_token = ? AND reset_password_expires > NOW()',
+      [token]
+    );
+    return rows[0]; // Devuelve el empleado si el token es válido y no ha expirado
+  } catch (error) {
+    console.error('Error en findByResetToken (Model):', error);
+    throw new Error('Error al buscar por token de reseteo.');
+  }
+};
+
+/**
+ * Actualiza la contraseña del empleado y limpia los campos de reseteo.
+ */
+const updatePasswordAndClearToken = async (legajo, hashedPassword) => {
+  try {
+    const [result] = await pool.query(
+      'UPDATE empleados SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE legajo = ?',
+      [hashedPassword, legajo]
+    );
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error('Error en updatePasswordAndClearToken (Model):', error);
+    throw new Error('Error al actualizar la contraseña.');
+  }
+};
+
 module.exports = {
   create,
   findByLegajo,
   findAll,
   updateDetails,
   confirmEmail,
+  findByEmail,
+  saveResetToken,
+  findByResetToken,
+  updatePasswordAndClearToken,
 };
