@@ -1,6 +1,22 @@
 //====================================================
-// IMPORTO DEPENDENCIAS Y BASE DE DATOS
+// ENTRY POINT DE LA APLICACIÓN
 //====================================================
+/**
+ * @file index.js
+ * @description Punto de entrada principal del servidor de la API de SIGEC.
+ * @requires express
+ * @requires ./config/db
+ * @requires ./routes/employeeRoutes
+ * @requires ./routes/planRoutes
+ * @requires ./routes/priceListRoutes
+ * @requires ./routes/clienteRoutes
+ * @requires ./routes/cotizacionRoutes
+ * @requires express-rate-limit
+ * @requires ./middleware/errorMiddleware
+ * @requires swagger-ui-express
+ * @requires ./config/swaggerConfig
+ */
+
 const express = require('express');
 require('./config/db');
 const employeesRoutes = require('./routes/employeeRoutes');
@@ -10,7 +26,8 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const cotizacionRoutes = require('./routes/cotizacionRoutes');
 const rateLimit = require('express-rate-limit');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swaggerConfig');
 
 //====================================================
 // INSTANCIA DE EXPRESS
@@ -51,12 +68,75 @@ app.get('/', (req, res) => {
 });
 
 //====================================================
+// RUTA PARA LA DOCUMENTACIÓN DE SWAGGER
+//====================================================
+/**
+ * @description Sirve la documentación de la API generada por Swagger.
+ * @name /api/docs
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+//====================================================
 // RUTAS 
 //====================================================
+/**
+ * @description Rutas para la gestión de empleados y autenticación.
+ * @name /api/employees
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 app.use('/api/employees', employeesRoutes);
+
+/**
+ * @description Rutas para la gestión de planes.
+ * @name /api/plans
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 app.use('/api/plans', planRoutes);
-app.use('/api/priceList', priceListRoutes);
+
+/**
+ * @description Rutas para la gestión de listas de precios.
+ * @name /api/priceList
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
+app.use('/api/priceLists', priceListRoutes);
+
+/**
+ * @description Rutas para la gestión de clientes.
+ * @name /api/clientes
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 app.use('/api/clientes', clienteRoutes);
+
+/**
+ * @description Rutas para la gestión de cotizaciones.
+ * @name /api/cotizaciones
+ * @function
+ * @memberof module:index
+ * @inner
+ * @param {string} path - Express path
+ * @param {callback} middleware - Express middleware.
+ */
 app.use('/api/cotizaciones', cotizacionRoutes);
 
 //====================================================

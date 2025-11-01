@@ -1,8 +1,13 @@
 //============================================================================
 // MODEL: PLANES
 //============================================================================= 
+/**
+ * @file planModel.js
+ * @description Modelo de datos para la tabla de planes.
+ * @requires ../config/db
+ */
 
-const pool = require('../config/db'); // 1. Usamos 'pool' (moderno)
+const pool = require('../config/db');
 
 /**
  * Crear un nuevo plan.
@@ -17,7 +22,7 @@ const create = async (planData) => {
   `;
 
   const [result] = await pool.query(query, [nombre, detalles, condiciones_generales]);
-  return result.insertId; // Retorna el resultado directo
+  return result.insertId;
 };
 
 /**
@@ -58,19 +63,34 @@ const getAllAdmin = async () => {
  * @returns {Promise<object>} Resultado del update.
  */
 const update = async (id, planData) => {
-  const { nombre, detalles, condiciones_generales, activo } = planData;
-  const query = `
-    UPDATE planes SET 
-      nombre = ?, 
-      detalles = ?, 
-      condiciones_generales = ?,
-      activo = ?
-    WHERE id = ?
-  `;
+  const fields = [];
+  const values = [];
 
-  const [result] = await pool.query(query, [
-    nombre, detalles, condiciones_generales, activo, id
-  ]);
+  if (planData.nombre !== undefined) {
+    fields.push('nombre = ?');
+    values.push(planData.nombre);
+  }
+  if (planData.detalles !== undefined) {
+    fields.push('detalles = ?');
+    values.push(planData.detalles);
+  }
+  if (planData.condiciones_generales !== undefined) {
+    fields.push('condiciones_generales = ?');
+    values.push(planData.condiciones_generales);
+  }
+  if (planData.activo !== undefined) {
+    fields.push('activo = ?');
+    values.push(planData.activo);
+  }
+
+  if (fields.length === 0) {
+    return { affectedRows: 0 };
+  }
+
+  const query = `UPDATE planes SET ${fields.join(', ')} WHERE id = ?`;
+  values.push(id);
+
+  const [result] = await pool.query(query, values);
   return result;
 };
 

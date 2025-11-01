@@ -1,6 +1,11 @@
 //============================================================================
 // MODELO DE CLIENTE
 //============================================================================= 
+/**
+ * @file clienteModel.js
+ * @description Modelo de datos para la tabla de clientes.
+ * @requires ../config/db
+ */
 
 const pool = require('../config/db');
 
@@ -65,23 +70,37 @@ const findClientesByAsesor = async (asesorId) => {
  * @returns {Promise<object>} Resultado del update.
  */
 const update = async (id, clienteData) => {
-  const {
-    nombres, apellidos, email, telefono,
-    direccion, codigo_postal, ciudad, provincia
-  } = clienteData;
+  const fields = [];
+  const values = [];
 
-  const query = `
-    UPDATE clientes SET 
-      nombres = ?, apellidos = ?, email = ?, telefono = ?, 
-      direccion = ?, codigo_postal = ?, ciudad = ?, provincia = ?
-    WHERE id = ?
-  `;
+  const camposPermitidos = [
+    'dni', 
+    'nombres',    
+    'apellidos',  
+    'email', 
+    'telefono', 
+    'direccion',
+    'codigo_postal',
+    'ciudad',
+    'provincia',
+    'activo'
+  ];
 
-  const [result] = await pool.query(query, [
-    nombres, apellidos, email, telefono,
-    direccion, codigo_postal, ciudad, provincia,
-    id
-  ]);
+  camposPermitidos.forEach(campo => {
+    if (clienteData[campo] !== undefined) {
+      fields.push(`${campo} = ?`);
+      values.push(clienteData[campo]);
+    }
+  });
+
+  if (fields.length === 0) {
+    return { affectedRows: 0 };
+  }
+
+  const query = `UPDATE clientes SET ${fields.join(', ')} WHERE id = ?`;
+  values.push(id); 
+
+  const [result] = await pool.query(query, values);
   return result;
 };
 

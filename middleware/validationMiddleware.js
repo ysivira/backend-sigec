@@ -1,6 +1,13 @@
 // =======================================================
 // VALIDACIONES
 // =======================================================
+/**
+ * @file validationMiddleware.js
+ * @description Middlewares de validación para las rutas de la API.
+ * @requires express-validator
+ * @requires ../utils/constants
+ */
+
 const { body, validationResult } = require('express-validator');
 const {
   ROLES,
@@ -16,7 +23,12 @@ const {
 // =======================================================
 // REVISADOR GENERAL DE REGLAS
 // =======================================================
-// Este middleware es el que revisa si alguna de las reglas definidas falla
+/**
+ * Middleware que revisa si alguna de las reglas de validación de express-validator ha fallado.
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ * @param {function} next - La función para pasar al siguiente middleware.
+ */
 const checkValidation = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -33,11 +45,11 @@ const checkValidation = (req, res, next) => {
 // =======================================================
 // PAQUETES DE REGLAS GENERALES
 // =======================================================
-// REGLAS PARA EMPLEADOS
-// =======================================================
 
-// Reglas para REGISTRAR UN EMPLEADO (POST /api/employees/register)
-
+/**
+ * @description Reglas de validación para el registro de un empleado.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateEmployeeRegistration = [
   body('legajo')
     .notEmpty().withMessage('El legajo es requerido.')
@@ -70,15 +82,19 @@ const validateEmployeeRegistration = [
     .isLength({ min: 6 }).withMessage('El password debe tener al menos 6 caracteres.')
 ];
 
-// Reglas para LOGIN DE EMPLEADO (POST /api/employees/login)
-
+/**
+ * @description Reglas de validación para el login de un empleado.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateEmployeeLogin = [
   body('legajo').notEmpty().withMessage('El legajo es requerido.'),
   body('password').notEmpty().withMessage('El password es requerido.')
 ];
 
-// Reglas para ACTUALIZAR EMPLEADO (PUT /api/employees/:legajo)
-
+/**
+ * @description Reglas de validación para la actualización de un empleado.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateEmployeeUpdate = [
   body('estado')
     .optional()
@@ -95,37 +111,46 @@ const validateEmployeeUpdate = [
     .isNumeric().withMessage('El supervisor_id debe ser numérico.')
 ];
 
-// =======================================================
-// REGLAS PARA CLIENTES  (POST /api/clientes)
-// =======================================================
-
-// Reglas para CREAR UN CLIENTE (POST /api/clientes)
+/**
+ * @description Reglas de validación para la creación de un cliente.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateClientCreation = [
   body('dni')
+    .trim()
     .notEmpty().withMessage('El DNI es requerido.')
     .isNumeric().withMessage('El DNI solo debe contener números.')
     .isLength({ min: 7, max: 8 }).withMessage('El DNI debe tener 7 u 8 dígitos.'),
 
-  body('nombres')
-    .notEmpty().withMessage('El/los nombre(s) son requeridos.')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El nombre solo debe contener letras y espacios.'),
+  body('nombres') 
+    .trim()
+    .notEmpty().withMessage('El/los nombre(s) es/son requeridos.')
+    .isAlpha('es-ES', { ignore: ' ' }).withMessage('El nombre solo debe contener letras y espacios.'),
 
   body('apellidos')
-    .notEmpty().withMessage('El/los apellido(s) son requeridos.')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El apellido solo debe contener letras y espacios.'),
+    .trim()
+    .notEmpty().withMessage('El/los apellido(s) es/son requeridos.')
+    .isAlpha('es-ES', { ignore: ' ' }).withMessage('El apellido solo debe contener letras y espacios.'),
 
   body('email')
     .notEmpty().withMessage('El email es requerido.')
     .isEmail().normalizeEmail().withMessage('El formato del email no es válido.'),
 
   body('telefono')
+    .trim()
     .notEmpty().withMessage('El teléfono es requerido.')
-    .isNumeric().withMessage('El teléfono solo debe contener números.')
+    .isNumeric().withMessage('El teléfono solo debe contener números.'),
+  
+  body('direccion')
+    .trim()
+    .notEmpty().withMessage('La dirección es requerida.'),
 ];
 
-// Reglas para ACTUALIZAR UN CLIENTE (PUT /api/clientes/:id)
+/**
+ * @description Reglas de validación para la actualización de un cliente.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateClientUpdate = [
-  // .optional() = si no viene, no hay error. Si viene, se valida.
   body('email')
     .optional()
     .isEmail().normalizeEmail().withMessage('El formato del email no es válido.'),
@@ -135,11 +160,10 @@ const validateClientUpdate = [
     .isNumeric().withMessage('El teléfono solo debe contener números.')
 ];
 
-// =======================================================
-// REGLAS PARA PLANES
-// =======================================================
-// Reglas para CREAR UN PLAN (POST /api/plans)
-
+/**
+ * @description Reglas de validación para la creación de un plan.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validatePlanCreation = [
   body('nombre')
     .notEmpty().withMessage('El nombre es requerido.')
@@ -147,16 +171,18 @@ const validatePlanCreation = [
     .isLength({ min: 3, max: 50 }).withMessage('El nombre debe tener entre 3 y 50 caracteres.'),
 
   body('detalles')
-    .optional() // Permitimos que 'detalles' esté vacío
+    .optional()
     .isString().withMessage('Los detalles deben ser texto.'),
 
   body('condiciones_generales')
-    .optional() // Permitimos que 'condiciones_generales' esté vacío
+    .optional()
     .isString().withMessage('Las condiciones deben ser texto.')
 ];
 
-// Reglas para ACTUALIZAR UN PLAN (PUT /api/plans/:id)
-
+/**
+ * @description Reglas de validación para la actualización de un plan.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validatePlanUpdate = [
   body('nombre')
     .optional()
@@ -176,11 +202,10 @@ const validatePlanUpdate = [
     .isBoolean().withMessage("El campo 'activo' debe ser un booleano (true o false).")
 ];
 
-// =======================================================
-// REGLAS PARA LISTAS DE PRECIOS
-// =======================================================
-
-// Reglas para ACTUALIZAR UN PRECIO (PUT /api/priceList/:id)
+/**
+ * @description Reglas de validación para la actualización de un precio.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validatePriceUpdate = [
   body('rango_etario')
     .optional()
@@ -190,15 +215,18 @@ const validatePriceUpdate = [
   body('precio')
     .optional()
     .isDecimal({ decimal_digits: '2' }).withMessage('El precio debe ser un número con hasta 2 decimales.')
-    .toFloat() // Convierte el string a número
+    .toFloat()
 ];
 
-// Reglas para AUMENTO MASIVO (POST /api/priceList/increase)
+/**
+ * @description Reglas de validación para el aumento masivo de precios.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validatePriceIncrease = [
   body('porcentaje')
     .notEmpty().withMessage('El porcentaje es requerido.')
     .isFloat({ gt: 0 }).withMessage('El porcentaje debe ser un número mayor a 0.')
-    .toFloat(), // Convierte a número
+    .toFloat(),
 
   body('tipo_ingreso')
     .notEmpty().withMessage('El tipo_ingreso es requerido.')
@@ -206,13 +234,11 @@ const validatePriceIncrease = [
     .withMessage("El tipo_ingreso debe ser 'Obligatorio', 'Voluntario' o 'Ambas'.")
 ];
 
-// =======================================================
-// REGLAS PARA COTIZACIONES
-// =======================================================
-
-// --- Reglas para CREAR/ACTUALIZAR COTIZACION ---
+/**
+ * @description Reglas de validación para la creación y actualización de una cotización.
+ * @type {Array<import('express-validator').ValidationChain>}
+ */
 const validateCotizacion = [
-  // Valida los 3 objetos principales
   body('clienteData')
     .isObject().withMessage('clienteData debe ser un objeto.'),
   body('cotizacionData')
@@ -220,7 +246,6 @@ const validateCotizacion = [
   body('miembrosData')
     .isArray({ min: 1 }).withMessage('Debe haber al menos un miembro en la cotización.'),
 
-  // Valida clienteData (solo formato, no obligatoriedad)
   body('clienteData.dni')
     .notEmpty().withMessage('El DNI del cliente es requerido.')
     .isNumeric().withMessage('El DNI debe ser numérico.'),
@@ -233,7 +258,6 @@ const validateCotizacion = [
   body('clienteData.telefono')
     .optional().isNumeric().withMessage('El teléfono del cliente debe ser numérico.'),
 
-  // Valida cotizacionData
   body('cotizacionData.plan_id')
     .notEmpty().withMessage('cotizacionData.plan_id es requerido.')
     .isInt({ min: 1 }).withMessage('El plan_id debe ser un número entero positivo.'),
@@ -258,11 +282,10 @@ const validateCotizacion = [
     .withMessage(`descuento_afinidad_pct debe ser uno de: ${DESCUENTOS_AFINIDAD.join(', ')}`),
 
   body('cotizacionData.descuento_otros_opcion')
-    .optional({ checkFalsy: true }) // Permite '', null o undefined
+    .optional({ checkFalsy: true })
     .isIn(OTROS_DESCUENTOS_OPCIONES)
     .withMessage(`Opción de Otros Descuentos inválida. Valores permitidos: ${OTROS_DESCUENTOS_OPCIONES.join(', ')}`),
 
-  // Valida campos condicionales
   body('cotizacionData.aporte_obra_social')
     .custom((value, { req }) => {
       if (req.body.cotizacionData.tipo_ingreso === 'Obligatorio' && (!value || parseFloat(value) <= 0)) {
@@ -282,7 +305,6 @@ const validateCotizacion = [
       return true;
     }),
 
-  // Valida Miembros
   body('miembrosData.*.parentesco')
     .notEmpty().withMessage('El parentesco es requerido para todos los miembros.')
     .isIn(Object.values(PARENTESCOS))

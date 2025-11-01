@@ -1,6 +1,12 @@
 //====================================================
 // ARCHIVO DE CONFIGURACION DE LA BASE DE DATOS
 //====================================================
+/**
+ * @file db.js
+ * @description Configuración y creación del pool de conexiones a la base de datos MySQL.
+ * @requires mysql2
+ * @requires dotenv
+ */
 
 //=============================================================================
 //IMPORTO DEPENDENCIAS Y VARIABLES DE ENTORNO .ENV
@@ -11,6 +17,10 @@ require('dotenv').config();
 //====================================================================
 // CONEXION A LA DB USANDO LAS VARIABLES DE ENTORNO
 //====================================================================
+/**
+ * @description Pool de conexiones a la base de datos MySQL.
+ * @type {import('mysql2').Pool}
+ */
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -40,4 +50,8 @@ db.getConnection((err, connection) => {
 //====================================================
 // EXPORTO LA CONEXION PARA USARLA EN OTROS MODULOS
 //====================================================
+/**
+ * @description Pool de conexiones a la base de datos con soporte para promesas.
+ * @type {import('mysql2/promise').Pool}
+ */
 module.exports = db.promise();

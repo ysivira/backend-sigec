@@ -1,6 +1,18 @@
 //==========================================================
-// CONTROLADOR DE EMPLEADOS (Actualizado con Reseteo de Password)
+// CONTROLADOR DE EMPLEADOS
 //==========================================================
+/**
+ * @file employeeController.js
+ * @description Controlador para la gestión de empleados y autenticación.
+ * @requires bcryptjs
+ * @requires crypto
+ * @requires ../utils/generateToken
+ * @requires express-async-handler
+ * @requires ../models/employeeModel
+ * @requires ../utils/constants
+ * @requires ../service/emailService
+ */
+
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto'); // Para los tokens de reseteo
 const generateToken = require('../utils/generateToken');
@@ -15,9 +27,13 @@ const {
   sendWelcomeEmail 
 } = require('../service/emailService'); 
 
-//@desc  Registrar un nuevo empleado
-//@route POST /api/employees/register
-//@access Public
+/**
+ * @desc    Registrar un nuevo empleado
+ * @route   POST /api/employees/register
+ * @access  Public
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const registerEmployee = asyncHandler(async (req, res) => {
     const {
         legajo, nombre, segundo_nombre, apellido, segundo_apellido,
@@ -42,9 +58,13 @@ const registerEmployee = asyncHandler(async (req, res) => {
     res.status(201).json({ message: 'Asesor registrado exitosamente. La cuenta está inactiva y pendiente de activación.' });
 });
 
-// @desc    Autenticar (login) un empleado
-// @route   POST /api/employees/login
-// @access  Public
+/**
+ * @desc    Autenticar (login) un empleado
+ * @route   POST /api/employees/login
+ * @access  Public
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const loginEmployee = asyncHandler(async (req, res) => {
     const { legajo, password } = req.body;
     const employee = await Employee.findByLegajo(legajo);
@@ -67,18 +87,26 @@ const loginEmployee = asyncHandler(async (req, res) => {
     }
 });
 
-// @desc    Obtener todos los empleados (Admin)
-// @route   GET /api/employees
-// @access  Private/Admin
+/**
+ * @desc    Obtener todos los empleados (Admin)
+ * @route   GET /api/employees
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getAllEmployees = asyncHandler(async (req, res) => {
     const estadoFilter = req.query.estado || null;
     const employees = await Employee.findAll(estadoFilter);
     res.status(200).json(employees);
 });
 
-// @desc    Actualizar detalles/estado/rol de un empleado (Admin)
-// @route   PUT /api/employees/status/:legajo
-// @access  Private/Admin
+/**
+ * @desc    Actualizar detalles/estado/rol de un empleado (Admin)
+ * @route   PUT /api/employees/status/:legajo
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const updateEmployeeDetails = asyncHandler(async (req, res) => {
     const { legajo } = req.params;
     const { estado, rol, supervisor_id } = req.body;
@@ -127,9 +155,13 @@ const updateEmployeeDetails = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Detalles del empleado actualizados exitosamente.' });
 });
 
-// @desc    Obtener el perfil del empleado autenticado
-// @route   GET /api/employees/myprofile
-// @access  Private
+/**
+ * @desc    Obtener el perfil del empleado autenticado
+ * @route   GET /api/employees/myprofile
+ * @access  Private
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getMyProfile = async (req, res) => {
     const { legajo, nombre, email, rol } = req.employee;
     res.status(200).json({
@@ -140,9 +172,13 @@ const getMyProfile = async (req, res) => {
     });
 };
 
-// @desc    Ruta de confirmación de email (Link enviado al usuario)
-// @route   GET /api/employees/confirm-email/:legajo
-// @access  Public
+/**
+ * @desc    Ruta de confirmación de email (Link enviado al usuario)
+ * @route   GET /api/employees/confirm-email/:legajo
+ * @access  Public
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const confirmEmployeeEmail = asyncHandler(async (req, res) => {
     const { legajo } = req.params;
     const result = await Employee.confirmEmail(legajo);
@@ -153,12 +189,12 @@ const confirmEmployeeEmail = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Email confirmado exitosamente. La cuenta está pendiente de activación por el Administrador.' });
 });
 
-// Olvidé mi contraseña 
-
 /**
- * @desc    Solicitar reseteo de contraseña.
- * @route   POST /api/employees/forgot-password
- * @access  Public
+ * @desc    Solicitar reseteo de contraseña.
+ * @route   POST /api/employees/forgot-password
+ * @access  Public
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
  */
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
@@ -194,9 +230,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Resetear la contraseña.
- * @route   POST /api/employees/reset-password/:token
- * @access  Public
+ * @desc    Resetear la contraseña.
+ * @route   POST /api/employees/reset-password/:token
+ * @access  Public
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
  */
 const resetPassword = asyncHandler(async (req, res) => {
     const { newPassword } = req.body;

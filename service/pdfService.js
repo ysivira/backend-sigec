@@ -3,13 +3,22 @@
 //============================================================================
 const PDFDocument = require('pdfkit');
 
-// Funciones Auxiliares
-
+/**
+ * Formatea una fecha a un string en formato 'es-AR'.
+ * @param {Date|string} date - La fecha a formatear.
+ * @returns {string} La fecha formateada.
+ */
 function formatDate(date) {
     const d = new Date(date);
     const utcDate = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
     return utcDate.toLocaleDateString('es-AR', { timeZone: 'UTC' });
 }
+
+/**
+ * Formatea un número a un string de moneda en formato 'es-AR'.
+ * @param {number|string} number - El número a formatear.
+ * @returns {string} El número formateado como moneda.
+ */
 function formatCurrency(number) {
     const numValue = parseFloat(number);
     if (isNaN(numValue)) {
@@ -24,22 +33,49 @@ function formatCurrency(number) {
         currency: 'ARS',
     }).format(number);
 }
+
+/**
+ * Genera un número de cotización basado en el ID y la fecha.
+ * @param {number} id - El ID de la cotización.
+ * @param {Date|string} fecha - La fecha de creación de la cotización.
+ * @returns {string} El número de cotización generado.
+ */
 function generarNumeroCotizacion(id, fecha) {
     const anio = new Date(fecha).getUTCFullYear();
     const idFormateado = String(id).padStart(6, '0');
     return `${anio}-${idFormateado}`;
 }
+
+/**
+ * Calcula la fecha de caducidad de la cotización (15 días después de la creación).
+ * @param {Date|string} fechaCreacion - La fecha de creación.
+ * @returns {string} La fecha de caducidad formateada.
+ */
 function getFechaCaducidad(fechaCreacion) {
     const fecha = new Date(fechaCreacion);
     fecha.setUTCDate(fecha.getUTCDate() + 15);
     return formatDate(fecha);
 }
+
+/**
+ * Calcula la fecha de ingreso (primer día del mes siguiente a la creación).
+ * @param {Date|string} fechaCreacion - La fecha de creación.
+ * @returns {string} La fecha de ingreso formateada.
+ */
 function getFechaIngreso(fechaCreacion) {
     const fecha = new Date(fechaCreacion);
     const anio = fecha.getUTCFullYear();
     const mes = fecha.getUTCMonth();
     return formatDate(new Date(Date.UTC(anio, mes + 1, 1)));
 }
+
+/**
+ * Genera una fila en la tabla de precios del PDF.
+ * @param {PDFDocument} doc - La instancia del documento PDF.
+ * @param {number} y - La posición Y para dibujar la fila.
+ * @param {string} c1 - El contenido de la primera columna.
+ * @param {string} c2 - El contenido de la segunda columna.
+ */
 function generarFilaTablaPrecios(doc, y, c1, c2) {
     const xStart = 50;
     const yLine = y + 15;
@@ -53,7 +89,12 @@ function generarFilaTablaPrecios(doc, y, c1, c2) {
         .stroke();
 }
 
-// Función generarTablaPrestaciones 
+/**
+ * Genera una tabla de prestaciones en el PDF.
+ * @param {PDFDocument} doc - La instancia del documento PDF.
+ * @param {string} titulo - El título de la tabla.
+ * @param {string} texto - El texto con las prestaciones.
+ */
 function generarTablaPrestaciones(doc, titulo, texto) {
     const alturaMinimaRequerida = 80;
     if (doc.y + alturaMinimaRequerida > doc.page.height - doc.page.margins.bottom) {
@@ -107,7 +148,12 @@ function generarTablaPrestaciones(doc, titulo, texto) {
     });
 }
 
-// Función generarBloqueTexto
+/**
+ * Genera un bloque de texto con título en el PDF.
+ * @param {PDFDocument} doc - La instancia del documento PDF.
+ * @param {string} titulo - El título del bloque.
+ * @param {string} texto - El contenido del bloque.
+ */
 function generarBloqueTexto(doc, titulo, texto) {
     // Verifica si hay espacio suficiente para el bloque
     const alturaMinimaRequerida = 50;
@@ -133,8 +179,11 @@ function generarBloqueTexto(doc, titulo, texto) {
     });
 }
 
-// --- Función Principal ---
-
+/**
+ * Genera el PDF de la cotización y lo envía como respuesta HTTP.
+ * @param {object} data - Los datos de la cotización.
+ * @param {import('express').Response} res - El objeto de respuesta de Express.
+ */
 function generarCotizacionPDF(data, res) {
     if (!data) throw new Error('No se proporcionaron datos (data) para generar el PDF.');
     if (!data.asesor) data.asesor = {};
@@ -255,11 +304,15 @@ function generarCotizacionPDF(data, res) {
     y = doc.y;
     const xStartTotal = 50;
     doc.fontSize(14).font('Helvetica-Bold').text(
-        'Total a pagar', 300, y,
+        'Total a pagar',
+        300,
+        y,
         { width: 150, align: 'right' }
     );
     doc.fontSize(14).font('Helvetica-Bold').text(
-        formatCurrency(data.valor_total || 0), xStartTotal, y,
+        formatCurrency(data.valor_total || 0),
+        xStartTotal,
+        y,
         { align: 'right' }
     );
 
@@ -285,4 +338,3 @@ function generarCotizacionPDF(data, res) {
 }
 
 module.exports = { generarCotizacionPDF };
-

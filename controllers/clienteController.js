@@ -25,7 +25,7 @@ const verifyClienteByDni = asyncHandler(async (req, res) => {
 // @route   POST /api/clientes
 // @access  Private (Asesor)
 const createCliente = asyncHandler(async (req, res) => {
-  const { dni, nombres, apellidos, email, telefono } = req.body;
+  const { dni, nombres, apellidos, email, telefono, direccion } = req.body;
 
   // Verificamos si el cliente ya existe (para evitar duplicados)
   const clienteExistente = await Cliente.findByDni(dni);
@@ -40,6 +40,7 @@ const createCliente = asyncHandler(async (req, res) => {
     apellidos,
     email,
     telefono,
+    direccion,
     asesor_captador_id: req.employee.legajo
   };
 

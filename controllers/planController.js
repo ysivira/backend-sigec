@@ -1,14 +1,23 @@
 //============================================================================
 // CONTROLLER: PLANES
 //=============================================================================
+/**
+ * @file planController.js
+ * @description Controlador para la gestión de planes.
+ * @requires express-async-handler
+ * @requires ../models/planModel
+ */
 
 const asyncHandler = require('express-async-handler');
-const Plan = require('../models/planModel');
 const PlanModel = require('../models/planModel');
 
-// @desc    Crear un nuevo plan
-// @route   POST /api/plans
-// @access  Private/Admin
+/**
+ * @desc    Crear un nuevo plan
+ * @route   POST /api/plans
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const createPlan = asyncHandler(async (req, res) => {
   const { nombre, detalles, condiciones_generales } = req.body;
 
@@ -30,17 +39,25 @@ const createPlan = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Obtener todos los planes (activos e inactivos)
-// @route   GET /api/plans
-// @access  Private/Admin
+/**
+ * @desc    Obtener todos los planes (activos e inactivos)
+ * @route   GET /api/plans
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getAllPlansAdmin = asyncHandler(async (req, res) => {
   const planes = await PlanModel.getAllAdmin();
   res.status(200).json(planes);
 });
 
-// @desc    Obtener un plan por ID (Activo o Inactivo)
-// @route   GET /api/plans/:id
-// @access  Private/Admin
+/**
+ * @desc    Obtener un plan por ID (Activo o Inactivo)
+ * @route   GET /api/plans/:id
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getPlanById = asyncHandler(async (req, res) => {
   
   const plan = await PlanModel.getById(req.params.id); 
@@ -51,9 +68,13 @@ const getPlanById = asyncHandler(async (req, res) => {
   res.status(200).json(plan);
 });
 
-// @desc    Actualizar un plan
-// @route   PUT /api/plans/:id
-// @access  Private/Admin
+/**
+ * @desc    Actualizar un plan
+ * @route   PUT /api/plans/:id
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const updatePlan = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { nombre, detalles, condiciones_generales, activo } = req.body;
@@ -95,9 +116,13 @@ const updatePlan = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Plan actualizado exitosamente.' });
 });
 
-// @desc    Eliminar (lógicamente) un plan
-// @route   DELETE /api/plans/:id
-// @access  Private/Admin
+/**
+ * @desc    Eliminar (lógicamente) un plan
+ * @route   DELETE /api/plans/:id
+ * @access  Private/Admin
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const deletePlan = asyncHandler(async (req, res) => {
   const result = await PlanModel.remove(req.params.id);
   
@@ -108,9 +133,13 @@ const deletePlan = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Plan eliminado (inactivado) exitosamente.' });
 });
 
-// @desc    Obtener todos los planes (SOLO ACTIVOS)
-// @route   GET /api/plans/active
-// @access  Private (Asesor)
+/**
+ * @desc    Obtener todos los planes (SOLO ACTIVOS)
+ * @route   GET /api/plans/active
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getActivePlans = asyncHandler(async (req, res) => {
     const planes = await PlanModel.getAll();
     res.status(200).json(planes);
@@ -123,5 +152,5 @@ module.exports = {
   getPlanById,
   updatePlan,
   deletePlan,
-  getActivePlans // ¡Importante! Añadimos esta ruta para los Asesores
+  getActivePlans
 };

@@ -1,6 +1,11 @@
 //=================================================================
 // MODELO DE COTIZACION
 //=================================================================
+/**
+ * @file cotizacionModel.js
+ * @description Modelo de datos para la tabla de cotizaciones.
+ * @requires ../config/db
+ */
 
 const pool = require('../config/db');
 
@@ -174,6 +179,8 @@ const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) 
 
 /**
  * Busca la última cotización de un cliente por DNI (solo activos).
+ * @param {string} dni - El DNI del cliente a buscar.
+ * @returns {Promise<object|undefined>} La última cotización si se encuentra, de lo contrario undefined.
  */
 const findLastCotizationByDni = async (dni) => {
   const query = `
@@ -190,11 +197,13 @@ const findLastCotizationByDni = async (dni) => {
     LIMIT 1
   `;
   const [rows] = await pool.query(query, [dni]);
-  return rows[0]; // Devuelve el objeto o undefined
+  return rows[0];
 };
 
 /**
  * Busca una cotización completa por su ID.
+ * @param {number} id - El ID de la cotización a buscar.
+ * @returns {Promise<object|undefined>} La cotización completa si se encuentra, de lo contrario undefined.
  */
 const findCotizacionById = async (id) => {
   // Obtener la cotización principal
@@ -226,6 +235,8 @@ const findCotizacionById = async (id) => {
 
 /**
  * Busca todas las cotizaciones de un asesor (solo activos).
+ * @param {string|number} asesorId - El ID del asesor.
+ * @returns {Promise<Array<object>>} Un array con las cotizaciones encontradas.
  */
 const findCotizacionesByAsesor = async (asesorId) => {
   const query = `
@@ -245,6 +256,8 @@ const findCotizacionesByAsesor = async (asesorId) => {
 
 /**
  * Anula (borrado lógico) una cotización.
+ * @param {number} id - El ID de la cotización a anular.
+ * @returns {Promise<object>} Resultado de la operación de actualización.
  */
 const anularCotizacion = async (id) => {
   // Actualizamos 'activo' y 'estado' para coherencia
@@ -254,10 +267,14 @@ const anularCotizacion = async (id) => {
 };
 
 /**
-* Busca una cotización ACTIVA por cliente, asesor, plan 
-* Y cantidad de miembros.
-* Se usa para prevenir duplicados exactos.
-*/
+ * Busca una cotización ACTIVA por cliente, asesor, plan y cantidad de miembros.
+ * Se usa para prevenir duplicados exactos.
+ * @param {number} cliente_id - El ID del cliente.
+ * @param {string|number} asesor_id - El ID del asesor.
+ * @param {number} plan_id - El ID del plan.
+ * @param {number} member_count - La cantidad de miembros en la cotización.
+ * @returns {Promise<object|undefined>} La cotización si se encuentra, de lo contrario undefined.
+ */
 const findActiveCotizacionByPlanAndMemberCount = async (cliente_id, asesor_id, plan_id, member_count) => {
   const query = `
 SELECT c.id
@@ -276,7 +293,7 @@ SELECT c.id
   LIMIT 1
  `;
   const [rows] = await pool.query(query, [cliente_id, asesor_id, plan_id, member_count]);
-  return rows[0]; // Devuelve { id: 123 } o undefined
+  return rows[0];
 };
 
 module.exports = {

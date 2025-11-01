@@ -6,8 +6,8 @@ const nodemailer = require('nodemailer');
 require('dotenv').config(); 
 
 /**
- * Creamos el "transportador" (el servicio que envía el email).
- * Usaremos Gmail
+ * Transportador de Nodemailer para el envío de correos a través de Gmail.
+ * @type {import('nodemailer').Transporter}
  */
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com', // Servidor SMTP de Gmail
@@ -21,8 +21,9 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Envía un correo de reseteo de contraseña.
- * @param {string} to - Email del destinatario (el asesor)
- * @param {string} token - El token único de reseteo
+ * @param {string} to - Email del destinatario (el asesor).
+ * @param {string} token - El token único de reseteo.
+ * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
 const sendPasswordResetEmail = async (to, token) => {
   const resetUrl = `http://localhost:3000/reset-password/${token}`; // URL del Frontend
@@ -61,8 +62,10 @@ const sendPasswordResetEmail = async (to, token) => {
 };
 
 /**
- * Envía el correo para activar la cuenta.
- * 
+ * Envía un correo para activar la cuenta de un nuevo asesor.
+ * @param {string} to - Email del destinatario (el asesor).
+ * @param {string} legajo - El legajo del asesor.
+ * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
 const sendActivationEmail = async (to, legajo) => {
   const activationUrl = `http://localhost:3000/confirm-email/${legajo}`; // URL del Frontend 
@@ -93,8 +96,10 @@ const sendActivationEmail = async (to, legajo) => {
 };
 
 /**
- * Envía el correo de bienvenida (cuando el admin activa la cuenta).
- * 
+ * Envía un correo de bienvenida cuando un administrador activa la cuenta.
+ * @param {string} to - Email del destinatario (el asesor).
+ * @param {string} nombre - El nombre del asesor.
+ * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
 const sendWelcomeEmail = async (to, nombre) => {
   const loginUrl = `http://localhost:3000/login`; // URL del Frontend

@@ -1,12 +1,18 @@
 //============================================================================
 // MODELO DE EMPLEADO
-//============================================================================= 
+//============================================================================
+/**
+ * @file employeeModel.js
+ * @description Modelo de datos para la tabla de empleados.
+ * @requires ../config/db
+ */
+
 const pool = require('../config/db');
 
 /**
- * Crea un nuevo empleado (asesor).
- * @param {object} employeeData - Datos del empleado.
- * @returns {Promise<object>} Resultado de la inserción.
+ * Crea un nuevo empleado en la base de datos.
+ * @param {object} employeeData - Datos del empleado a crear.
+ * @returns {Promise<object>} Resultado de la operación de inserción.
  */
 const create = async (employeeData) => {
   const {
@@ -32,20 +38,20 @@ const create = async (employeeData) => {
 };
 
 /**
- * Busca un empleado por su legajo.
- * @param {string|number} legajo - Legajo del empleado.
- * @returns {Promise<object|undefined>} El empleado encontrado o undefined.
+ * Busca un empleado por su número de legajo.
+ * @param {string|number} legajo - El legajo del empleado a buscar.
+ * @returns {Promise<object|undefined>} El objeto del empleado si se encuentra, de lo contrario undefined.
  */
 const findByLegajo = async (legajo) => {
   const query = 'SELECT * FROM empleados WHERE legajo = ?';
   const [results] = await pool.query(query, [legajo]);
-  return results[0]; // Retorna el resultado directo
+  return results[0];
 };
 
 /**
- * Obtener todos los empleados, con filtro opcional de estado.
- * @param {string|null} estado - Estado para filtrar (ej: 'activo') o null.
- * @returns {Promise<Array<object>>} Lista de empleados.
+ * Obtiene todos los empleados, con un filtro opcional por estado.
+ * @param {string|null} [estado=null] - El estado por el cual filtrar los empleados (e.g., 'activo', 'inactivo').
+ * @returns {Promise<Array<object>>} Un array con los empleados encontrados.
  */
 const findAll = async (estado = null) => {
   let query = 'SELECT legajo, nombre, apellido, email, rol, estado, supervisor_id FROM empleados';
@@ -63,10 +69,10 @@ const findAll = async (estado = null) => {
 };
 
 /**
- * Actualiza los detalles de un empleado (estado, rol, supervisor_id).
- * @param {string|number} legajo - Legajo del empleado a actualizar.
- * @param {object} data - Datos a actualizar (ej: { estado: 'activo' }).
- * @returns {Promise<object>} Resultado del update.
+ * Actualiza los detalles de un empleado (estado, rol, supervisor_id, etc.).
+ * @param {string|number} legajo - El legajo del empleado a actualizar.
+ * @param {object} data - Un objeto con los campos a actualizar.
+ * @returns {Promise<object>} Resultado de la operación de actualización.
  */
 const updateDetails = async (legajo, data) => {
   let fields = [];
@@ -101,9 +107,9 @@ const updateDetails = async (legajo, data) => {
 };
 
 /**
- * Confirma el email de un empleado (email_confirmado = 1).
- * @param {string|number} legajo - Legajo del empleado.
- * @returns {Promise<object>} Resultado del update.
+ * Marca el email de un empleado como confirmado (email_confirmado = 1).
+ * @param {string|number} legajo - El legajo del empleado.
+ * @returns {Promise<object>} Resultado de la operación de actualización.
  */
 const confirmEmail = async (legajo) => {
   const query = 'UPDATE empleados SET email_confirmado = 1 WHERE legajo = ? AND email_confirmado = 0';
@@ -112,7 +118,9 @@ const confirmEmail = async (legajo) => {
 };
 
 /**
- * Busca un empleado por su email (para forgotPassword).
+ * Busca un empleado por su dirección de email.
+ * @param {string} email - El email del empleado a buscar.
+ * @returns {Promise<object|undefined>} El objeto del empleado si se encuentra, de lo contrario undefined.
  */
 const findByEmail = async (email) => {
   try {
@@ -125,7 +133,11 @@ const findByEmail = async (email) => {
 };
 
 /**
- * Guarda el token de reseteo y su expiración en la DB.
+ * Guarda el token de reseteo de contraseña y su fecha de expiración en la base de datos.
+ * @param {string|number} legajo - El legajo del empleado.
+ * @param {string} token - El token de reseteo hasheado.
+ * @param {Date} expires - La fecha y hora de expiración del token.
+ * @returns {Promise<boolean>} `true` si la operación fue exitosa, de lo contrario `false`.
  */
 const saveResetToken = async (legajo, token, expires) => {
   try {
@@ -141,7 +153,9 @@ const saveResetToken = async (legajo, token, expires) => {
 };
 
 /**
- * Busca un empleado por su token de reseteo VÁLIDO (no expirado).
+ * Busca un empleado por un token de reseteo de contraseña válido (no expirado).
+ * @param {string} token - El token de reseteo hasheado.
+ * @returns {Promise<object|undefined>} El objeto del empleado si se encuentra, de lo contrario undefined.
  */
 const findByResetToken = async (token) => {
   try {
@@ -149,7 +163,7 @@ const findByResetToken = async (token) => {
       'SELECT * FROM empleados WHERE reset_password_token = ? AND reset_password_expires > NOW()',
       [token]
     );
-    return rows[0]; // Devuelve el empleado si el token es válido y no ha expirado
+    return rows[0];
   } catch (error) {
     console.error('Error en findByResetToken (Model):', error);
     throw new Error('Error al buscar por token de reseteo.');
@@ -157,7 +171,10 @@ const findByResetToken = async (token) => {
 };
 
 /**
- * Actualiza la contraseña del empleado y limpia los campos de reseteo.
+ * Actualiza la contraseña de un empleado y limpia los campos del token de reseteo.
+ * @param {string|number} legajo - El legajo del empleado.
+ * @param {string} hashedPassword - La nueva contraseña hasheada.
+ * @returns {Promise<boolean>} `true` si la operación fue exitosa, de lo contrario `false`.
  */
 const updatePasswordAndClearToken = async (legajo, hashedPassword) => {
   try {

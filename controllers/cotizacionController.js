@@ -9,9 +9,13 @@ const Plan = require('../models/planModel');
 const calculoService = require('../service/calculoService');
 const pdfService = require('../service/pdfService');
 
-// @desc    Verificar si un DNI ya tiene cotización
-// @route   GET /api/cotizaciones/verify-dni/:dni
-// @access  Private (Asesor)
+/**
+ * @desc    Verificar si un DNI ya tiene cotización
+ * @route   GET /api/cotizaciones/verify-dni/:dni
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const verifyDni = asyncHandler(async (req, res) => {
     let { dni } = req.params;
     dni = dni.replace(':', '');
@@ -75,7 +79,11 @@ const verifyDni = asyncHandler(async (req, res) => {
 });
 
 /**
- * Función auxiliar para gestionar la lógica de "Buscar o Crear Cliente".
+ * Busca un cliente por DNI o crea uno nuevo si no existe.
+ * @private
+ * @param {object} clienteData - Datos del cliente.
+ * @param {number} asesor_id - ID del asesor que crea el cliente.
+ * @returns {Promise<number>} El ID del cliente existente o recién creado.
  */
 const _getClienteId = async (clienteData, asesor_id) => {
     const clienteExistente = await Cliente.findByDni(clienteData.dni);
@@ -99,9 +107,13 @@ const _getClienteId = async (clienteData, asesor_id) => {
     return resultCliente.insertId;
 };
 
-// @desc    Crear una nueva cotización
-// @route   POST /api/cotizaciones
-// @access  Private (Asesor)
+/**
+ * @desc    Crear una nueva cotización
+ * @route   POST /api/cotizaciones
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const createCotizacion = asyncHandler(async (req, res) => {
     const { clienteData, cotizacionData, miembrosData } = req.body;
     const asesor_id = req.employee.legajo;
@@ -142,7 +154,7 @@ const createCotizacion = asyncHandler(async (req, res) => {
         miembrosData
     );
 
-    //  Prepara el objeto final para la DB
+    //  Prepara el objeto final para la DB
     const fullCotizacionData = {
         ...cotizacionCalculada,
         cliente_id: cliente_id,
@@ -154,10 +166,13 @@ const createCotizacion = asyncHandler(async (req, res) => {
     res.status(201).json(result); // Devuelve { id: 1, message: '...' }
 });
 
-
-// @desc    Actualizar una cotización
-// @route   PUT /api/cotizaciones/:id
-// @access  Private
+/**
+ * @desc    Actualizar una cotización
+ * @route   PUT /api/cotizaciones/:id
+ * @access  Private
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const updateCotizacion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -185,9 +200,13 @@ const updateCotizacion = asyncHandler(async (req, res) => {
     res.status(200).json(result);
 });
 
-// @desc    Obtener una cotización completa por ID
-// @route   GET /api/cotizaciones/:id
-// @access  Private (Asesor)
+/**
+ * @desc    Obtener una cotización completa por ID
+ * @route   GET /api/cotizaciones/:id
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getCotizacionById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -205,13 +224,26 @@ const getCotizacionById = asyncHandler(async (req, res) => {
     }
 });
 
+/**
+ * @desc    Obtener todas las cotizaciones de un asesor
+ * @route   GET /api/cotizaciones/asesor
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getCotizacionesByAsesor = asyncHandler(async (req, res) => {
     const asesor_logueado_legajo = req.employee.legajo;
     const cotizaciones = await Cotizacion.findCotizacionesByAsesor(asesor_logueado_legajo);
     res.status(200).json(cotizaciones);
 });
 
-
+/**
+ * @desc    Anular una cotización
+ * @route   PUT /api/cotizaciones/anular/:id
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const anularCotizacion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -236,9 +268,13 @@ const anularCotizacion = asyncHandler(async (req, res) => {
     }
 });
 
-// @desc    Generar y descargar una cotización en PDF
-// @route   GET /api/cotizaciones/:id/pdf
-// @access  Private (Asesor)
+/**
+ * @desc    Generar y descargar una cotización en PDF
+ * @route   GET /api/cotizaciones/:id/pdf
+ * @access  Private (Asesor)
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ */
 const getCotizacionPDF = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -291,4 +327,3 @@ module.exports = {
     anularCotizacion,
     getCotizacionPDF
 };
-

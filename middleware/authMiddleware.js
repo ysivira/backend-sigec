@@ -1,10 +1,22 @@
 //============================================================================
 // MIDDLEWARE DE AUTENTICACION
 //============================================================================= 
+/**
+ * @file authMiddleware.js
+ * @description Middleware para proteger rutas mediante la validación de tokens JWT.
+ * @requires jsonwebtoken
+ * @requires ../models/employeeModel
+ */
 
 const jwt = require('jsonwebtoken');
 const Employee = require('../models/employeeModel');
 
+/**
+ * Middleware para proteger rutas. Verifica el token JWT en el header de autorización.
+ * @param {object} req - El objeto de solicitud de Express.
+ * @param {object} res - El objeto de respuesta de Express.
+ * @param {function} next - La función para pasar al siguiente middleware.
+ */
 const protect = async (req, res, next) => {
     let token;
 

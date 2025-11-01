@@ -6,8 +6,14 @@ const priceListModel = require('../models/priceListModel');
 const monotributoModel = require('../models/monotributoModel');
 const { PARENTESCOS, TIPOS_INGRESO } = require('../utils/constants');
 
-// TRADUCTOR DE RANGO ETARIO (Función Privada)
-
+/**
+ * Traduce la edad y el parentesco a un rango etario específico del tarifario.
+ * @private
+ * @param {number} edad - La edad del miembro.
+ * @param {string} parentesco - El parentesco del miembro (e.g., 'TITULAR', 'HIJO').
+ * @param {boolean} es_casado - Si el titular es casado.
+ * @returns {string|null} El rango etario para la búsqueda de precios o null si no aplica.
+ */
 const _traducirRangoEtario = (edad, parentesco, es_casado) => {
     // Lógica para Hijos
     if (parentesco === PARENTESCOS.HIJO) {
@@ -40,7 +46,15 @@ const _traducirRangoEtario = (edad, parentesco, es_casado) => {
     }
 };
 
-// OBTENCIÓN PRECIO INDIVIDUAL (Función Privada)
+/**
+ * Obtiene el precio individual de un miembro del grupo familiar.
+ * @private
+ * @param {object} miembro - Objeto del miembro con edad y parentesco.
+ * @param {number} plan_id - El ID del plan seleccionado.
+ * @param {string} tipo_ingreso - El tipo de ingreso del titular.
+ * @param {boolean} es_casado - Si el titular es casado.
+ * @returns {Promise<number>} El precio individual del miembro.
+ */
 const _getPrecioIndividual = async (miembro, plan_id, tipo_ingreso, es_casado) => {
     const { edad, parentesco } = miembro;
 
@@ -71,8 +85,10 @@ const _getPrecioIndividual = async (miembro, plan_id, tipo_ingreso, es_casado) =
 };
 
 /**
- * CALCULADORA PRINCIPAL DE COTIZACIÓN
- * Orquesta todos los cálculos con descuentos independientes.
+ * Orquesta el cálculo completo de una cotización, incluyendo descuentos y aportes.
+ * @param {object} cotizacionData - Datos principales de la cotización.
+ * @param {Array<object>} miembrosData - Array con los datos de los miembros del grupo familiar.
+ * @returns {Promise<object>} Un objeto con la cotización calculada y los precios por miembro.
  */
 const calcularCotizacion = async (cotizacionData, miembrosData) => {
 

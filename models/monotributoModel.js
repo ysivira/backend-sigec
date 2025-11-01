@@ -1,6 +1,11 @@
 //============================================================================
 // MODELO DE MONOTRIBUTO
 //============================================================================= 
+/**
+ * @file monotributoModel.js
+ * @description Modelo de datos para la tabla de aportes de monotributo.
+ * @requires ../config/db
+ */
 
 const pool = require('../config/db');
 
