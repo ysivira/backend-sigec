@@ -73,7 +73,7 @@ router.get('/', getCotizacionesByAsesor);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Cotizacion'
+ *             $ref: '#/components/schemas/CotizacionPayload'
  *     responses:
  *       201:
  *         description: Cotización creada exitosamente.
@@ -157,7 +157,7 @@ router.delete('/:id', anularCotizacion);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Cotizacion'
+ *             $ref: '#/components/schemas/CotizacionPayload'
  *     responses:
  *       200:
  *         description: Cotización actualizada exitosamente.

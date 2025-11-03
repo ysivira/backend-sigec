@@ -108,51 +108,61 @@ const getAllEmployees = asyncHandler(async (req, res) => {
  * @param {object} res - El objeto de respuesta de Express.
  */
 const updateEmployeeDetails = asyncHandler(async (req, res) => {
-    const { legajo } = req.params;
-    const { estado, rol, supervisor_id } = req.body;
-    const employeeToUpdate = await Employee.findByLegajo(legajo);
-    if (!employeeToUpdate) {
-        res.status(404);
-        throw new Error('Empleado no encontrado.');
+  const { legajo } = req.params;
+  const updateData = { ...req.body };
+
+  const { estado, rol, supervisor_id } = updateData;
+  
+  const employeeToUpdate = await Employee.findByLegajo(legajo);
+  if (!employeeToUpdate) {
+    res.status(404);
+    throw new Error('Empleado no encontrado.');
+  }
+
+  let wasActivated = false;
+
+  if (estado) {
+    if (estado === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.email_confirmado !== 1) {
+      res.status(400);
+      throw new Error('No se puede activar el usuario. Email no confirmado...');
     }
-    const updateData = {};
-    let wasActivated = false;
-    if (estado) {
-        if (estado === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.email_confirmado !== 1) {
-            res.status(400);
-            throw new Error('No se puede activar el usuario. Email no confirmado (pendiente de confirmación del asesor).');
-        }
-        if (estado === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.estado === ESTADOS_EMPLEADO.INACTIVO) {
-            wasActivated = true;
-        }
-        updateData.estado = estado;
+    if (estado === ESTADOS_EMPLEADO.ACTIVO && employeeToUpdate.estado === ESTADOS_EMPLEADO.INACTIVO) {
+      wasActivated = true;
     }
-    if (rol) {
-        updateData.rol = rol;
+    updateData.estado = estado;
+  }
+
+  if (rol) {
+    updateData.rol = rol;
+  }
+
+  const currentRol = updateData.rol || employeeToUpdate.rol;
+  if (currentRol === ROLES.ASESOR) {
+    if (supervisor_id) {
+      const supervisor = await Employee.findByLegajo(supervisor_id);
+      if (!supervisor || (supervisor.rol !== ROLES.SUPERVISOR && supervisor.rol !== ROLES.ADMINISTRADOR)) {
+        res.status(400);
+        throw new Error('Supervisor asignado inválido...');
+      }
+      updateData.supervisor_id = supervisor_id;
+    } else if (supervisor_id === null) {
+      updateData.supervisor_id = null;
     }
-    const currentRol = updateData.rol || employeeToUpdate.rol;
-    if (currentRol === ROLES.ASESOR) {
-        if (supervisor_id) {
-            const supervisor = await Employee.findByLegajo(supervisor_id);
-            if (!supervisor || (supervisor.rol !== ROLES.SUPERVISOR && supervisor.rol !== ROLES.ADMINISTRADOR)) {
-                res.status(400);
-                throw new Error('Supervisor asignado inválido. Debe ser Supervisor o Administrador.');
-            }
-            updateData.supervisor_id = supervisor_id;
-        } else if (supervisor_id === null) {
-            updateData.supervisor_id = null;
-        }
-    } else if (currentRol === ROLES.SUPERVISOR || currentRol === ROLES.ADMINISTRADOR) {
-        updateData.supervisor_id = null;
-    }
-    const result = await Employee.updateDetails(legajo, updateData);
-    if (wasActivated) {
-        sendWelcomeEmail(employeeToUpdate.email, employeeToUpdate.nombre);
-    }
-    if (result.affectedRows === 0) {
-        return res.status(200).json({ message: 'No se realizaron cambios.' });
-    }
-    res.status(200).json({ message: 'Detalles del empleado actualizados exitosamente.' });
+  } else if (currentRol === ROLES.SUPERVISOR || currentRol === ROLES.ADMINISTRADOR) {
+    updateData.supervisor_id = null;
+  }
+
+  const result = await Employee.updateDetails(legajo, updateData);
+  
+  if (wasActivated) {
+    sendWelcomeEmail(employeeToUpdate.email, employeeToUpdate.nombre);
+  }
+
+  if (result.affectedRows === 0) {
+    return res.status(200).json({ message: 'No se realizaron cambios.' });
+  }
+
+  res.status(200).json({ message: 'Detalles del empleado actualizados exitosamente.' });
 });
 
 /**

@@ -29,8 +29,17 @@ const createPriceListBulk = asyncHandler(async (req, res) => {
     throw new Error('El body debe ser un array no vacío de listas de precios.');
   }
 
-  // Pasamos el array completo al modelo
-  const result = await PriceList.createBulk(entries);
+  const entriesProcesadas = entries.map(entry => {
+
+    const rango_etario_string = `${entry.edad_desde}-${entry.edad_hasta}`;
+
+    return {
+      ...entry,
+      rango_etario: rango_etario_string
+    };
+  });
+
+  const result = await PriceList.createBulk(entriesProcesadas);
 
   res.status(201).json({
     message: 'Listas de precios cargadas exitosamente.',
@@ -81,10 +90,32 @@ const getPricesByType = asyncHandler(async (req, res) => {
  * @param {object} res - El objeto de respuesta de Express.
  */
 const updatePriceEntry = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const { precio, edad_desde, edad_hasta } = req.body;
 
-  const { rango_etario, precio } = req.body;
+  const dataToUpdate = {};
 
-  await PriceList.update(req.params.id, { rango_etario, precio });
+  if (precio !== undefined) {
+    dataToUpdate.precio = precio;
+  }
+
+  if (edad_desde !== undefined && edad_hasta !== undefined) {
+    dataToUpdate.rango_etario = `${edad_desde}-${edad_hasta}`;
+  }
+
+  if (Object.keys(dataToUpdate).length === 0) {
+    res.status(400);
+    throw new Error('No se enviaron campos válidos para actualizar (ej: precio, edad_desde, edad_hasta).');
+  }
+
+  const result = await PriceList.update(id, dataToUpdate);
+
+  if (result.affectedRows === 0) {
+     res.status(404);
+     throw new Error('No se encontró una entrada de precio con ese ID.');
+  }
+
   res.status(200).json({ message: 'Entrada de precio actualizada exitosamente.' });
 });
 

@@ -165,7 +165,7 @@ router.get('/', protect, isAdmin, getAllEmployees);
  * /employees/{legajo}:
  *   put:
  *     tags: [Empleados - Admin]
- *     summary: Actualiza los detalles, estado o rol de un empleado.
+ *     summary: Actualiza los detalles, estado o rol de un empleado (Admin)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -179,7 +179,7 @@ router.get('/', protect, isAdmin, getAllEmployees);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/EmpleadoRegister'
+ *             $ref: '#/components/schemas/EmpleadoUpdate'
  *     responses:
  *       '200':
  *         description: Empleado actualizado exitosamente.

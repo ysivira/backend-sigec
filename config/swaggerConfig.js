@@ -73,6 +73,22 @@ const swaggerDefinition = {
           newPassword: { type: 'string', format: 'password', example: 'miNuevaClave123' }
         }
       },
+      EmpleadoUpdate: {
+        type: 'object',
+        properties: {
+          nombre: { type: 'string', example: 'Juan' },
+          segundo_nombre: { type: 'string', example: 'Carlos' },
+          apellido: { type: 'string', example: 'Perez' },
+          segundo_apellido: { type: 'string', example: 'Gomez' },
+          email: { type: 'string', format: 'email', example: 'juan.perez@sigec.com' },
+          telefono: { type: 'string', example: '1155443322' },
+          direccion: { type: 'string', example: 'Av. Siempre Viva 123' },
+          estado: { type: 'string', enum: ['activo', 'inactivo', 'pendiente'], example: 'activo' },
+          rol: { type: 'string', enum: ['admin', 'supervisor', 'asesor'], example: 'asesor' },
+          supervisor_id: { type: 'string', nullable: true, example: '40123456' },
+          email_confirmado: { type: 'boolean', example: true }
+        }
+      },
       
       // Schemas de Respuesta
       ApiResponse: {
@@ -101,8 +117,9 @@ const swaggerDefinition = {
       },
       PriceListEntry: {
         type: 'object',
-        required: ['plan_id', 'edad_desde', 'edad_hasta', 'tipo_ingreso', 'precio'],
+        required: ['lista_nombre', 'plan_id', 'edad_desde', 'edad_hasta', 'tipo_ingreso', 'precio'], // <-- Añadido
         properties: {
+          lista_nombre: { type: 'string', enum: ['Obligatorio', 'Voluntario'], example: 'Obligatorio' }, // <-- AÑADIDO
           plan_id: { type: 'number', example: 1 },
           edad_desde: { type: 'number', example: 0 },
           edad_hasta: { type: 'number', example: 17 },
@@ -159,54 +176,49 @@ const swaggerDefinition = {
         type: 'object',
         required: ['parentesco', 'edad'],
         properties: {
-          parentesco: { type: 'string', enum: ['titular', 'conyuge', 'hijo'], example: 'hijo' },
+          parentesco: { type: 'string', enum: ['Titular', 'Conyuge', 'Hijo'], example: 'Hijo' },
           edad: { type: 'number', example: 10 }
         }
       },
-      CotizacionCreate: {
+      CotizacionClienteData: {
         type: 'object',
-        required: ['cliente_id', 'plan_id', 'tipo_ingreso', 'grupo_familiar'],
+        required: ['dni', 'nombres', 'apellidos', 'email', 'telefono'],
         properties: {
-          cliente_id: { type: 'number', example: 101 },
-          plan_id: { type: 'number', example: 1 },
-          tipo_ingreso: { type: 'string', enum: ['monotributo', 'relacion_dependencia'], example: 'monotributo' },
-          grupo_familiar: {
+          dni: { type: 'string', example: '99998891' },
+          nombres: { type: 'string', example: 'Prueba' },
+          apellidos: { type: 'string', example: 'Obligatorio' },
+          email: { type: 'string', example: 'matri-obli@test.com' },
+          telefono: { type: 'string', example: '999111' }
+        }
+      },
+      CotizacionCoreData: {
+        type: 'object',
+        required: ['plan_id', 'tipo_ingreso', 'es_casado'],
+        properties: {
+          plan_id: { type: 'number', example: 2 },
+          tipo_ingreso: { type: 'string', enum: ['Obligatorio', 'Voluntario'], example: 'Obligatorio' },
+          es_casado: { type: 'boolean', example: true },
+          aporte_obra_social: { type: 'number', example: 42234.12 },
+          descuento_comercial_pct: { type: 'number', example: 45 },
+          descuento_afinidad_pct: { type: 'number', example: 0 },
+          descuento_tarjeta_pct: { type: 'number', example: 5 },
+          monotributo_categoria: { type: 'string', nullable: true, example: null },
+          monotributo_adherentes: { type: 'number', example: 0 },
+          comentarios: { type: 'string', example: 'Prueba Plan Esmeralda...' }
+        }
+      },
+      CotizacionPayload: {
+        type: 'object',
+        required: ['clienteData', 'cotizacionData', 'miembrosData'],
+        properties: {
+          clienteData: { $ref: '#/components/schemas/CotizacionClienteData' },
+          cotizacionData: { $ref: '#/components/schemas/CotizacionCoreData' },
+          miembrosData: {
             type: 'array',
-            items: { $ref: '#/components/schemas/MiembroGrupoFamiliar' },
-            example: [
-              { parentesco: 'titular', edad: 30 },
-              { parentesco: 'conyuge', edad: 28 },
-              { parentesco: 'hijo', edad: 5 }
-            ]
+            items: { $ref: '#/components/schemas/MiembroGrupoFamiliar' }
           }
         }
       },
-      CotizacionUpdate: {
-        type: 'object',
-        properties: {
-          cliente_id: { type: 'number', example: 101 },
-          plan_id: { type: 'number', example: 1 },
-          tipo_ingreso: { type: 'string', enum: ['monotributo', 'relacion_dependencia'], example: 'monotributo' },
-          grupo_familiar: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/MiembroGrupoFamiliar' },
-            example: [
-              { parentesco: 'titular', edad: 31 }
-            ]
-          },
-          estado: { 
-             type: 'string', 
-             enum: ['borrador', 'enviada', 'aprobada', 'rechazada'], 
-             example: 'enviada'
-          },
-          motivo_rechazo: {
-             type: 'string',
-             example: 'El cliente considera que es muy costoso.'
-          }
-        }
-      }
-
-
     }
   },
   security: [

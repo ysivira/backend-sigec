@@ -207,10 +207,20 @@ const validatePlanUpdate = [
  * @type {Array<import('express-validator').ValidationChain>}
  */
 const validatePriceUpdate = [
-  body('rango_etario')
+  body('edad_desde')
     .optional()
-    .isString().withMessage('El rango_etario debe ser texto.')
-    .notEmpty().withMessage('El rango_etario no puede estar vacío.'),
+    .isInt({ min: 0 }).withMessage('edad_desde debe ser un número entero >= 0.'),
+  
+  body('edad_hasta')
+    .optional()
+    .isInt({ min: 0 }).withMessage('edad_hasta debe ser un número entero >= 0.')
+    .custom((value, { req }) => {
+      if ((value !== undefined && req.body.edad_desde === undefined) || 
+          (value === undefined && req.body.edad_desde !== undefined)) {
+        throw new Error('Para cambiar el rango, se deben enviar ambos: edad_desde y edad_hasta.');
+      }
+      return true;
+    }),
 
   body('precio')
     .optional()
@@ -241,22 +251,28 @@ const validatePriceIncrease = [
 const validateCotizacion = [
   body('clienteData')
     .isObject().withMessage('clienteData debe ser un objeto.'),
+  
   body('cotizacionData')
     .isObject().withMessage('cotizacionData debe ser un objeto.'),
+
   body('miembrosData')
     .isArray({ min: 1 }).withMessage('Debe haber al menos un miembro en la cotización.'),
 
   body('clienteData.dni')
     .notEmpty().withMessage('El DNI del cliente es requerido.')
     .isNumeric().withMessage('El DNI debe ser numérico.'),
+
   body('clienteData.nombres')
     .optional().isString().matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El nombre solo debe contener letras.'),
+
   body('clienteData.apellidos')
     .optional().isString().matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('El apellido solo debe contener letras.'),
+
   body('clienteData.email')
     .optional().isEmail().withMessage('El email del cliente no es válido.'),
+
   body('clienteData.telefono')
-    .optional().isNumeric().withMessage('El teléfono del cliente debe ser numérico.'),
+    .optional().isNumeric().withMessage('El teléfono del cliente debe ser numérico.'), 
 
   body('cotizacionData.plan_id')
     .notEmpty().withMessage('cotizacionData.plan_id es requerido.')
@@ -272,30 +288,45 @@ const validateCotizacion = [
     .isBoolean().withMessage('es_casado debe ser un valor booleano.'),
 
   body('cotizacionData.descuento_comercial_pct')
-    .notEmpty().withMessage('cotizacionData.descuento_comercial_pct es requerido.')
-    .isNumeric().isIn(DESCUENTOS_COMERCIALES)
+    .optional() 
+    .isNumeric().withMessage('El descuento comercial debe ser numérico.')
+    .toFloat() 
+    .isIn(DESCUENTOS_COMERCIALES)
     .withMessage(`descuento_comercial_pct debe ser uno de: ${DESCUENTOS_COMERCIALES.join(', ')}`),
 
   body('cotizacionData.descuento_afinidad_pct')
-    .notEmpty().withMessage('cotizacionData.descuento_afinidad_pct es requerido.')
-    .isNumeric().isIn(DESCUENTOS_AFINIDAD)
+    .optional() 
+    .isNumeric().withMessage('El descuento de afinidad debe ser numérico.')
+    .toFloat() 
+    .isIn(DESCUENTOS_AFINIDAD)
     .withMessage(`descuento_afinidad_pct debe ser uno de: ${DESCUENTOS_AFINIDAD.join(', ')}`),
+
+  body('cotizacionData.descuento_tarjeta_pct')
+    .optional() 
+    .isNumeric().withMessage('El descuento de tarjeta debe ser numérico.')
+    .toFloat()
+    .isIn([0, 5]) 
+    .withMessage('descuento_tarjeta_pct debe ser 0 o 5.'),
 
   body('cotizacionData.descuento_otros_opcion')
     .optional({ checkFalsy: true })
     .isIn(OTROS_DESCUENTOS_OPCIONES)
-    .withMessage(`Opción de Otros Descuentos inválida. Valores permitidos: ${OTROS_DESCUENTOS_OPCIONES.join(', ')}`),
+    .withMessage(`Opción de Otros Descuentos inválida. Valores permitidos: ${OTROS_DESCUENTOS_OPCIONES.join(', ')}`), 
 
   body('cotizacionData.aporte_obra_social')
-    .custom((value, { req }) => {
-      if (req.body.cotizacionData.tipo_ingreso === 'Obligatorio' && (!value || parseFloat(value) <= 0)) {
+    .optional() 
+    .isNumeric().withMessage('El aporte debe ser numérico.')
+    .toFloat()
+    .custom((value, { req }) => { 
+      if (req.body.cotizacionData.tipo_ingreso === 'Obligatorio' && (!value || value <= 0)) {
         throw new Error('aporte_obra_social es requerido y debe ser mayor a 0 para tipo Obligatorio.');
       }
       return true;
     }),
 
   body('cotizacionData.monotributo_categoria')
-    .custom((value, { req }) => {
+    .optional() 
+    .custom((value, { req }) => { 
       if (req.body.cotizacionData.tipo_ingreso === 'Monotributo' && !value) {
         throw new Error('monotributo_categoria es requerida para tipo Monotributo.');
       }
@@ -309,7 +340,7 @@ const validateCotizacion = [
     .notEmpty().withMessage('El parentesco es requerido para todos los miembros.')
     .isIn(Object.values(PARENTESCOS))
     .withMessage(`El parentesco debe ser uno de: ${Object.values(PARENTESCOS).join(', ')}`),
-
+    
   body('miembrosData.*.edad')
     .notEmpty().withMessage('La edad es requerida para todos los miembros.')
     .isInt({ min: 0, max: 100 }).withMessage('La edad debe ser un número entre 0 y 100.')

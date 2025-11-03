@@ -52,12 +52,14 @@ const {
  *             items:
  *               $ref: '#/components/schemas/PriceListEntry'
  *           example:
- *             - plan_id: 1
+ *             - lista_nombre: "Obligatorio"
+ *               plan_id: 1
  *               edad_desde: 0
  *               edad_hasta: 17
  *               tipo_ingreso: "monotributo"
  *               precio: 15000
- *             - plan_id: 1
+ *             - lista_nombre: "Obligatorio"
+ *               plan_id: 1
  *               edad_desde: 18
  *               edad_hasta: 25
  *               tipo_ingreso: "monotributo"

@@ -78,6 +78,34 @@ const updateDetails = async (legajo, data) => {
   let fields = [];
   let values = [];
 
+  if (data.nombre) {
+    fields.push('nombre = ?');
+    values.push(data.nombre);
+  }
+  if (data.segundo_nombre) {
+    fields.push('segundo_nombre = ?');
+    values.push(data.segundo_nombre);
+  }
+  if (data.apellido) {
+    fields.push('apellido = ?');
+    values.push(data.apellido);
+  }
+  if (data.segundo_apellido) {
+    fields.push('segundo_apellido = ?');
+    values.push(data.segundo_apellido);
+  }
+  if (data.email) {
+    fields.push('email = ?');
+    values.push(data.email);
+  }
+  if (data.telefono) {
+    fields.push('telefono = ?');
+    values.push(data.telefono);
+  }
+  if (data.direccion) {
+    fields.push('direccion = ?');
+    values.push(data.direccion);
+  }
   if (data.estado) {
     fields.push('estado = ?');
     values.push(data.estado);
