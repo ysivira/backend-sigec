@@ -11,7 +11,7 @@ const pool = require('../config/db');
 
 /**
  * Busca el valor del aporte de monotributo para una categoría específica.
- * @param {string} categoria - La categoría a buscar (ej: 'A', 'B', 'D').
+ * @param {string} categoria - La categoría a buscar ('A', 'B', 'D').
  * @returns {Promise<number>} - El valor del aporte.
  */
 const findAporteByCategoria = async (categoria) => {

@@ -83,7 +83,6 @@ router.get('/', getCotizacionesByAsesor);
  *         description: Ya existe una cotización activa para este cliente, plan y cantidad de miembros.
  */
 router.post('/', 
-    protect,
     validateCotizacion,
     checkValidation,
     createCotizacion
@@ -169,7 +168,6 @@ router.delete('/:id', anularCotizacion);
  *         description: Cotización no encontrada.
  */
 router.put('/:id',
-    protect,
     validateCotizacion,
     checkValidation,
     updateCotizacion

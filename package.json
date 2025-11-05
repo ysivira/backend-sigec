@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --runInBand --verbose"
   },
   "keywords": [],
   "author": "",
@@ -19,14 +19,26 @@
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^8.1.0",
     "express-validator": "^7.3.0",
+    "jest": "^30.2.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.14.4",
+    "mysql2": "^3.15.3",
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.17.2",
+    "supertest": "^7.1.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testTimeout": 10000
   }
 }

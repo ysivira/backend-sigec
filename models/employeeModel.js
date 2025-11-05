@@ -18,19 +18,26 @@ const create = async (employeeData) => {
   const {
     legajo, nombre, segundo_nombre, apellido, segundo_apellido,
     email, telefono, direccion, hashedPassword,
+    reset_password_token, 
+    reset_password_expires
   } = employeeData;
 
   const query = `
     INSERT INTO empleados 
     (legajo, nombre, segundo_nombre, apellido, segundo_apellido, 
      email, telefono, direccion, password, 
-     rol, estado, supervisor_id, fecha_creacion, email_confirmado) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'asesor', 'inactivo', NULL, NOW(), 0)
+     rol, estado, supervisor_id, fecha_creacion, email_confirmado,
+     reset_password_token, reset_password_expires -- 3. ¡Añadimos las columnas!
+    ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'asesor', 'inactivo', NULL, NOW(), 0, ?, ?)
+    -- 4. ¡Añadimos los '?'!
   `;
 
   const values = [
     legajo, nombre, segundo_nombre, apellido, segundo_apellido,
     email, telefono, direccion, hashedPassword,
+    reset_password_token, 
+    reset_password_expires
   ];
 
   const [result] = await pool.query(query, values);
@@ -50,7 +57,7 @@ const findByLegajo = async (legajo) => {
 
 /**
  * Obtiene todos los empleados, con un filtro opcional por estado.
- * @param {string|null} [estado=null] - El estado por el cual filtrar los empleados (e.g., 'activo', 'inactivo').
+ * @param {string|null} [estado=null] - El estado por el cual filtrar los empleados ('activo', 'inactivo').
  * @returns {Promise<Array<object>>} Un array con los empleados encontrados.
  */
 const findAll = async (estado = null) => {

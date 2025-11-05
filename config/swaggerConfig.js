@@ -89,7 +89,6 @@ const swaggerDefinition = {
           email_confirmado: { type: 'boolean', example: true }
         }
       },
-      
       // Schemas de Respuesta
       ApiResponse: {
         type: 'object',
@@ -233,7 +232,6 @@ const options = {
     apis: ['./routes/*.js'], 
 };
 
-// Generamos la especificación de Swagger
 const swaggerSpec = swaggerJSDoc(options);
 
 module.exports = swaggerSpec;

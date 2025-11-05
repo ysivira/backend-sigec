@@ -120,8 +120,6 @@ router.get('/:id', getPlanById);
  */
 router.put(
   '/:id',
-  protect,
-  isAdmin,
   validatePlanUpdate,
   checkValidation,
   updatePlan

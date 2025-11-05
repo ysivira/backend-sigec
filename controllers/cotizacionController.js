@@ -163,7 +163,7 @@ const createCotizacion = asyncHandler(async (req, res) => {
 
     // Guardar en la DB 
     const result = await Cotizacion.createFullCotizacion(fullCotizacionData, miembrosConPrecios);
-    res.status(201).json(result); // Devuelve { id: 1, message: '...' }
+    res.status(201).json(result); 
 });
 
 /**
@@ -187,7 +187,6 @@ const updateCotizacion = asyncHandler(async (req, res) => {
     if (cotizacionExistente.asesor_id !== asesor_logueado_legajo) {
         res.status(403);
         throw new Error('No autorizado para modificar esta cotización.');
-        T
     }
     // Gestión de Cliente (Buscar o Crear)
     const { cotizacionCalculada, miembrosConPrecios } = await calculoService.calcularCotizacion(
@@ -279,16 +278,15 @@ const getCotizacionPDF = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
 
-    // Obtener los datos completos (Protegido por asyncHandler)
+    // Obtener los datos completos
     const cotizacionCompleta = await Cotizacion.findCotizacionById(id);
 
-    // Validar que exista (Protegido por asyncHandler)
     if (!cotizacionCompleta) {
         res.status(404);
         throw new Error('Cotización no encontrada.');
     }
 
-    // Validar permisos (Protegido por asyncHandler)
+    // Validar permisos 
     if (cotizacionCompleta.asesor_id !== asesor_logueado_legajo) {
         res.status(403);
         throw new Error('No tiene permisos para ver esta cotización.');
@@ -300,8 +298,7 @@ const getCotizacionPDF = asyncHandler(async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
 
-        // Crear el pdf y enviarlo en la respuesta
-        // Si esto falla (ej: TypeError), el catch local lo atrapará.
+        // Crear el pdf y enviarlo en la respuesta; Si falla, el catch local atrapará el error.
         pdfService.generarCotizacionPDF(cotizacionCompleta, res);
 
     } catch (error) {

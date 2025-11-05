@@ -14,13 +14,12 @@
  */
 
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); // Para los tokens de reseteo
+const crypto = require('crypto'); 
 const generateToken = require('../utils/generateToken');
 const asyncHandler = require('express-async-handler');
-const Employee = require('../models/employeeModel'); // Usamos 'Employee' como en tu archivo
+const Employee = require('../models/employeeModel'); 
 const { ROLES, ESTADOS_EMPLEADO } = require('../utils/constants');
 
-// Importamos el servicio de email REAL
 const { 
   sendPasswordResetEmail, 
   sendActivationEmail, 
@@ -31,30 +30,43 @@ const {
  * @desc    Registrar un nuevo empleado
  * @route   POST /api/employees/register
  * @access  Public
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
+ * @param {object} req 
+ * @param {object} res 
  */
 const registerEmployee = asyncHandler(async (req, res) => {
     const {
         legajo, nombre, segundo_nombre, apellido, segundo_apellido,
         email, telefono, direccion, password,
     } = req.body;
+
     const employeeExists = await Employee.findByLegajo(legajo);
     if (employeeExists) {
         res.status(409);
         throw new Error('El legajo ya se encuentra registrado.');
     }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Genera el token de activación
+    const activationToken = crypto.randomBytes(20).toString('hex');
+    // Define la expiración 
+    const activationTokenExpires = new Date(Date.now() + 3600000); 
+
+    // Añade el token y la expiración a los datos del nuevo empleado
     const newEmployeeData = {
         legajo, nombre, segundo_nombre: segundo_nombre || null,
         apellido, segundo_apellido: segundo_apellido || null,
-        email, telefono, direccion, hashedPassword,
+        email, telefono, direccion, 
+        hashedPassword, 
+        reset_password_token: activationToken, 
+        reset_password_expires: activationTokenExpires 
     };
-    await Employee.create(newEmployeeData);
 
-    // Enviar email de activación
-    sendActivationEmail(email, legajo); 
+    await Employee.create(newEmployeeData);
+    
+    await sendActivationEmail(email, legajo, activationToken); 
+
     res.status(201).json({ message: 'Asesor registrado exitosamente. La cuenta está inactiva y pendiente de activación.' });
 });
 
@@ -233,7 +245,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     
     } catch (emailError) {
       console.error(emailError);
-      // Si falla el envío de email, no podemos dejar al usuario sin saberlo
+      // Si falla el envío de email, notificamos al usuario 
       res.status(500);
       throw new Error('Error al enviar el email. Por favor, intente de nuevo más tarde.');
     }
@@ -255,13 +267,11 @@ const resetPassword = asyncHandler(async (req, res) => {
         throw new Error('La contraseña es requerida y debe tener al menos 6 caracteres.');
     }
     
-    // Hashear el token que viene del link para buscarlo en la DB
     const hashedToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
 
-    // Buscar si el token es válido y no ha expirado 
     const employee = await Employee.findByResetToken(hashedToken);
     
     if (!employee) {
@@ -269,11 +279,9 @@ const resetPassword = asyncHandler(async (req, res) => {
         throw new Error('Token inválido o expirado. Por favor, solicita un nuevo reseteo.');
     }
 
-    // Si es válido, hashear la nueva contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Actualizar la contraseña y limpiar el token de reseteo
+    
     await Employee.updatePasswordAndClearToken(employee.legajo, hashedPassword);
 
     res.status(200).json({ message: 'Contraseña actualizada exitosamente.' });

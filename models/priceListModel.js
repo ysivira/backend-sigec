@@ -26,7 +26,7 @@ const createBulk = async (entries) => {
     entry.rango_etario,
     entry.plan_id,
     entry.precio,
-    1 // Por defecto declaramos activo
+    1 // Activo por defecto
   ]);
 
   const [result] = await pool.query(query, [values]);
@@ -36,7 +36,7 @@ const createBulk = async (entries) => {
 /**
  * @desc    Obtener la lista de precios de un plan específico (sólo activos)
  * @param {number} planId - El ID del plan.
- * @param {string} tipoIngreso - El tipo de ingreso (e.g., 'Obligatorio', 'Voluntario').
+ * @param {string} tipoIngreso - El tipo de ingreso ('Obligatorio', 'Voluntario').
  * @returns {Promise<Array<object>>} Lista de precios para el plan y tipo de ingreso especificados.
  */
 const getByPlanId = async (planId, tipoIngreso) => {
@@ -47,7 +47,7 @@ const getByPlanId = async (planId, tipoIngreso) => {
 
 /**
  * @desc    Obtener la lista de precios completa por tipo de lista (sólo activos)
- * @param {string} tipoIngreso - El tipo de ingreso (e.g., 'Obligatorio', 'Voluntario').
+ * @param {string} tipoIngreso - El tipo de ingreso ('Obligatorio', 'Voluntario').
  * @returns {Promise<Array<object>>} Lista de precios para el tipo de ingreso especificado.
  */
 const getByType = async (tipoIngreso) => {
@@ -105,7 +105,7 @@ const applyMassiveIncrease = async (porcentaje, tipoIngreso) => {
  *
  * @param {number} plan_id - El ID del plan (ej: 1).
  * @param {string} tipo_ingreso - (ej: 'Obligatorio').
- * @param {string} rango_etario - El rango exacto a buscar (ej: '41-50' o 'MAT 41-50').
+ * @param {string} rango_etario - El rango exacto a buscar ('41-50' o 'MAT 41-50').
  * @returns {Promise<number>} - El precio encontrado.
  */
 const findPrecio = async (plan_id, tipo_ingreso, rango_etario) => {

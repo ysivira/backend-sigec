@@ -79,7 +79,7 @@ const updatePlan = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { nombre, detalles, condiciones_generales, activo } = req.body;
 
-  // 1. Verificar que el plan existe
+  // Verifica que el plan existe
   const planExistente = await PlanModel.getById(id);
   if (!planExistente && activo !== 1) { // Si no lo encuentra (quizás está inactivo)
       const planAdmin = await PlanModel.getAllAdmin(); 
@@ -89,8 +89,7 @@ const updatePlan = asyncHandler(async (req, res) => {
       }
   }
 
-  // 2. Construir el objeto de actualización
-  // (Filtramos campos undefined para que el PUT actualice solo lo que se envía)
+  // Construye el objeto de actualización el PUT actualice solo lo que se envía
   const updateData = {};
   if (nombre !== undefined) updateData.nombre = nombre;
   if (detalles !== undefined) updateData.detalles = detalles;
@@ -99,13 +98,13 @@ const updatePlan = asyncHandler(async (req, res) => {
     updateData.activo = (activo === true || activo === 1) ? 1 : 0;
   }
 
-  // 3. Validar que algo se envió
+  // Valida que algo se envió
   if (Object.keys(updateData).length === 0) {
     res.status(400);
     throw new Error('No se enviaron datos para actualizar.');
   }
 
-  // 4. Ejecutar la actualización
+  // Ejecuta la actualización
   const result = await PlanModel.update(id, updateData);
 
   if (result.affectedRows === 0) {

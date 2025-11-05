@@ -12,7 +12,9 @@
 //IMPORTO DEPENDENCIAS Y VARIABLES DE ENTORNO .ENV
 //=============================================================================
 const mysql = require('mysql2');
-require('dotenv').config(); 
+if (process.env.NODE_ENV !== 'test') {
+  require('dotenv').config();
+}
 
 //====================================================================
 // CONEXION A LA DB USANDO LAS VARIABLES DE ENTORNO
@@ -41,7 +43,6 @@ db.getConnection((err, connection) => {
     return;
   }
   if (connection) {
-    console.log(`Conexión exitosa al Pool de MySQL con el ID ${connection.threadId}`);
     // Libero la conexión de prueba
     connection.release(); 
   }

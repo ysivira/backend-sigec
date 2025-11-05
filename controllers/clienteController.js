@@ -1,33 +1,47 @@
 //============================================================================
 // CONTROLADOR DE CLIENTE
 //============================================================================= 
+
+/**
+ * @file clienteController.js
+ * @description Controlador para gestionar las operaciones relacionadas con los clientes.
+ * @requires ../models/clienteModel
+ * @requires express-async-handler
+ */
 const Cliente = require('../models/clienteModel');
 const asyncHandler = require('express-async-handler');
 
-// @desc    Verificar si un cliente existe por DNI
-// @route   GET /api/clientes/verify/:dni
-// @access  Private (Asesor)
+/**
+ * @description Verifica si un cliente existe por su DNI.
+ * @route GET /api/clientes/verify/:dni
+ * @access Private (Asesor)
+ * @param {object} req - Objeto de solicitud de Express.
+ * @param {object} res - Objeto de respuesta de Express.
+ * @throws {Error} Si el cliente no se encuentra.
+ */
 const verifyClienteByDni = asyncHandler(async (req, res) => {
   const { dni } = req.params;
   const cliente = await Cliente.findByDni(dni);
 
   if (cliente) {
-    // Si existe, devolvemos los datos del cliente
     res.status(200).json(cliente);
   } else {
-    // Si no existe, devolvemos un 404
     res.status(404);
     throw new Error('Cliente no encontrado');
   }
 });
 
-// @desc    Crear un nuevo cliente
-// @route   POST /api/clientes
-// @access  Private (Asesor)
+/**
+ * @description Crea un nuevo cliente en la base de datos.
+ * @route POST /api/clientes
+ * @access Private (Asesor)
+ * @param {object} req - Objeto de solicitud de Express con los datos del cliente en el body.
+ * @param {object} res - Objeto de respuesta de Express.
+ * @throws {Error} Si ya existe un cliente con el mismo DNI.
+ */
 const createCliente = asyncHandler(async (req, res) => {
   const { dni, nombres, apellidos, email, telefono, direccion } = req.body;
 
-  // Verificamos si el cliente ya existe (para evitar duplicados)
   const clienteExistente = await Cliente.findByDni(dni);
   if (clienteExistente) {
     res.status(409);
@@ -52,24 +66,31 @@ const createCliente = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Obtener listado de clientes por asesor logueado
-// @route   GET /api/clientes/asesor
-// @access  Private (Asesor)
+/**
+ * @description Obtiene el listado de clientes asociados al asesor que ha iniciado sesión.
+ * @route GET /api/clientes/asesor
+ * @access Private (Asesor)
+ * @param {object} req - Objeto de solicitud de Express.
+ * @param {object} res - Objeto de respuesta de Express.
+ */
 const getClientesByAsesor = asyncHandler(async (req, res) => {
   const asesor_logueado_legajo = req.employee.legajo;
   const clientes = await Cliente.findClientesByAsesor(asesor_logueado_legajo);
   res.status(200).json(clientes);
-
 });
 
-// @desc    Actualizar datos de un cliente
-// @route   PUT /api/clientes/:id
-// @access  Private (Asesor)
+/**
+ * @description Actualiza los datos de un cliente existente.
+ * @route PUT /api/clientes/:id
+ * @access Private (Asesor)
+ * @param {object} req - Objeto de solicitud de Express con el ID del cliente y los datos a actualizar.
+ * @param {object} res - Objeto de respuesta de Express.
+ * @throws {Error} Si el cliente no se encuentra o el asesor no tiene permisos.
+ */
 const updateCliente = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const asesor_logueado_legajo = req.employee.legajo;
 
-  // Verifica que el cliente existe
   const cliente = await Cliente.findById(id);
 
   if (!cliente) {
@@ -77,20 +98,20 @@ const updateCliente = asyncHandler(async (req, res) => {
     throw new Error('Cliente no encontrado');
   }
 
-  // Verifica que pertenece al asesor
+  // Verifica que el cliente pertenece al asesor que intenta modificarlo
   if (cliente.asesor_captador_id !== asesor_logueado_legajo) {
     res.status(403);
     throw new Error('No autorizado para modificar este cliente.');
   }
 
-  // (El middleware 'validateClientUpdate' ya revisó el body)
+  // El middleware 'validateClientUpdate' ya ha validado el body
   const dataToUpdate = req.body;
   const result = await Cliente.update(id, dataToUpdate);
 
   if (result.affectedRows > 0) {
     res.status(200).json({ message: 'Cliente actualizado exitosamente.' });
   } else {
-    res.status(200).json({ message: 'No se pudo actualizar el cliente.' });
+    res.status(404).json({ message: 'No se pudo actualizar el cliente.' });
   }
 });
 

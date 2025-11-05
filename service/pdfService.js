@@ -209,9 +209,7 @@ function generarCotizacionPDF(data, res) {
     doc.fontSize(10).font('Helvetica').text('Cotización N°', 400, 80, { align: 'right' });
     doc.fontSize(14).font('Helvetica-Bold').text(cotizacionNum, 400, 95, { align: 'right' });
 
-    // El cursor 'doc.y' sigue estando al final del bloque Asesor (aprox 145)
-
-    // INICIO AJUSTE TÍTULO 
+    // AJUSTE TÍTULO 
 
     doc.moveDown(3); // Espacio extra ANTES del título
     doc.fontSize(14).font('Helvetica-Bold').text('COTIZACIÓN DE PLAN', 50, doc.y);
@@ -319,10 +317,10 @@ function generarCotizacionPDF(data, res) {
     doc.addPage();
 
 
-    // Dibujamos la primera tabla
+    // Dibuja la primera tabla
     generarTablaPrestaciones(doc, 'Prestaciones del Plan', data.plan.detalles || 'No disponible.');
 
-    // Dejamos espacio DESPUÉS de la primera tabla
+    // Deja espacio DESPUÉS de la primera tabla
     doc.moveDown(1);
 
     // Verifica si hay espacio para el TÍTULO de la segunda tabla
@@ -331,7 +329,7 @@ function generarCotizacionPDF(data, res) {
         doc.addPage();
     }
 
-    // Dibujamos la segunda tabla
+    // Dibuja la segunda tabla
     generarBloqueTexto(doc, 'Condiciones Generales', data.plan.condiciones_generales || 'No disponible.'); 
     // Finalizar el PDF
     doc.end();
