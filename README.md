@@ -7,9 +7,10 @@ Este repositorio contiene el **backend** de la aplicación, que incluye:
 * Una **API RESTful** completa construida con Node.js y Express.
 * Autenticación y autorización (Asesores, Supervisores, Admin) usando **JWT** (JSON Web Tokens).
 * Gestión completa (CRUD) de Clientes, Planes y Empleados.
-* Un **motor de cálculo** dinámico para cotizaciones, capaz de manejar múltiples descuentos, aportes de obra social y tipos de ingreso.
+* Un **motor de cálculo** dinámico para cotizaciones.
 * Generación de documentos **PDF** de cotización sobre la marcha.
 * Documentación de API interactiva y automatizada con **Swagger**.
+* **Una suite de 10 pruebas de integración (testing) automatizadas con Jest y Supertest.**
 
 ---
 
@@ -17,7 +18,7 @@ Este repositorio contiene el **backend** de la aplicación, que incluye:
 
 Toda la documentación interactiva de la API, donde se pueden probar todos los endpoints, se encuentra disponible una vez que el servidor está en funcionamiento.
 
-**Para ver la documentation:**
+**Para ver la documentación:**
 
 1.  Inicia el servidor:
     ```bash
@@ -25,6 +26,7 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
     ```
 2.  Abre la siguiente URL en tu navegador:
     [**http://localhost:5000/api/docs**](http://localhost:5000/api/docs)
+    **(Nota: Esta es la ruta que tienes en tu archivo. Si no funciona, revisa la que definiste en tu `app.js` para `swaggerUi.serve`)**
 
 ---
 
@@ -32,17 +34,21 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone https://github.com/ysivira/backend-sigec
+    git clone [https://github.com/ysivira/backend-sigec](https://github.com/ysivira/backend-sigec)
     ```
 2.  **Instala las dependencias:**
     ```bash
     npm install
     ```
-3.  Configura tus variables de entorno en un archivo `.env` (puedes usar `.env.example` como plantilla).
+3.  **Configura tus variables de entorno:**
+    * Crea un archivo `.env` en la raíz del proyecto.
+    * Usa el archivo `.env.example` como plantilla para configurar tus credenciales de base de datos y `JWT_SECRET`.
+    * **Importante:** Asegúrate de definir tanto `DB_NAME` (ej. `sigec_db`) como **`TEST_DB_NAME` (ej. `sigec_test`)**.
 
-4.  **Prepara la Base de Datos:**
+4.  **Prepara la Base de Datos de Desarrollo:**
+    * **Esta configuración es solo para correr el servidor de desarrollo (`npm run dev`).**
     * Abre tu herramienta de base de datos (DBeaver, MySQL Workbench, etc.).
-    * Crea una nueva base de datos con el nombre que pusiste en tu `.env` (ej. `sigec_db`).
+    * Crea una nueva base de datos con el nombre que pusiste en **`DB_NAME`** en tu `.env` (ej. **`sigec_db`**).
     * Abre esa base de datos y **ejecuta el script `schema.sql`** (que está en la raíz del proyecto) para crear todas las tablas.
 
 5.  **Inicia el servidor:**
@@ -56,9 +62,21 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
     npm run dev
     ```
 
-    ### Para Producción (o si `npm run dev` falla)
-    Este comando ejecuta el servidor una sola vez. Si haces cambios en el código, tendrás que detenerlo (`Ctrl+C`) y volver a iniciarlo.
+    ### Para Producción
+    Este comando ejecuta el servidor una sola vez. (Asegúrate de tener `"start": "node index.js"` en tu `package.json`).
 
     ```bash
-    node index.js
+    npm start
     ```
+
+---
+
+## **Pruebas (Testing)**
+
+Este proyecto incluye una suite completa de 10 pruebas de integración automatizadas que validan toda la lógica de la API (Autenticación, Clientes y Cotizaciones).
+
+Las pruebas se ejecutan contra la base de datos de prueba (definida en `TEST_DB_NAME`), la cual se **crea y destruye automáticamente** en cada ejecución. No necesitas configurar `schema.sql` para las pruebas.
+
+**Para ejecutar todas las pruebas:**
+```bash
+npm test
