@@ -29,6 +29,14 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
 
 ---
 
+## Diagrama de la Base de Datos (DER)
+
+Este es el Diagrama de Entidad-Relación que muestra la estructura de la base de datos de SIGEC.
+
+![Diagrama de Entidad-Relación de SIGEC](diagrama_der.png)
+
+---
+
 ## Instalación
 
 1.  **Clona el repositorio:**
