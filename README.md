@@ -33,7 +33,7 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
 
 Este es el Diagrama de Entidad-Relación que muestra la estructura de la base de datos de SIGEC.
 
-![Diagrama de Entidad-Relación de SIGEC](diagrama_der.png)
+![Diagrama de Entidad-Relación de SIGEC](docs/diagrama_der.png)
 
 ---
 
