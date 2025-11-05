@@ -47,16 +47,16 @@ Este es el Diagrama de Entidad-Relación que muestra la estructura de la base de
     ```bash
     npm install
     ```
-3.  **Configura tus variables de entorno:**
-    * Crea un archivo `.env` en la raíz del proyecto.
-    * Usa el archivo `.env.example` como plantilla para configurar tus credenciales de base de datos y `JWT_SECRET`.
-    * **Importante:** Asegúrate de definir tanto `DB_NAME` (ej. `sigec_db`) como `TEST_DB_NAME` (ej. `sigec_test`).
+3.  **Configura tus variables de entorno:**
+    * Crea un archivo `.env` en la raíz del proyecto.
+    * **Usa el archivo `.env.example` como plantilla.** Este archivo incluye las credenciales de la base de datos, `JWT_SECRET` y las **variables para la configuración del servidor de email (SMTP)**, que son cruciales para el registro de usuarios.
 
 4.  **Prepara la Base de Datos de Desarrollo:**
     * **Esta configuración es solo para correr el servidor de desarrollo (`npm run dev`).**
     * Abre tu herramienta de base de datos (DBeaver, MySQL Workbench, etc.).
     * Crea una nueva base de datos con el nombre que pusiste en `DB_NAME` en tu `.env` (ej. `sigec_db`).
-    * Abre esa base de datos y **ejecuta el script `schema.sql`** (que está en la raíz del proyecto) para crear todas las tablas.
+    * **Paso 4a:** Abre esa base de datos y **ejecuta el script `schema.sql`** (para crear las tablas vacías).
+    * **Paso 4b:** Inmediatamente después, **ejecuta el script `data.sql`** (para cargar los datos de ejemplo y el usuario admin).
 
 5.  **Inicia el servidor:**
 
@@ -87,3 +87,24 @@ Las pruebas se ejecutan contra la base de datos de prueba (definida en `TEST_DB_
 **Para ejecutar todas las pruebas:**
 ```bash
 npm test
+
+---
+
+## **Primeros Pasos y Flujo de Trabajo**
+
+¡Tu instancia de SIGEC está lista! Para usarla, debes seguir el flujo de roles:
+
+### 1. Acceso como Administrador
+
+El script `data.sql` ha creado un super-usuario Administrador para ti. Estos son los datos para ingresar al sistema a través de la pantalla de login:
+
+* **Legajo:** `admin`
+* **Clave:** `admin2025*`
+
+### 2. Flujo de Cotización (Asesor)
+
+El sistema está diseñado para que los asesores se registren, pero no puedan cotizar hasta que completen el flujo de seguridad de 3 pasos:
+
+1.  **Registro y Confirmación:** Un nuevo asesor se registra a través del formulario de registro. Al finalizar, el sistema (usando las credenciales del `.env`) le enviará un correo para confirmar su dirección de email. El asesor debe hacer clic en ese enlace.
+2.  **Activación (Tarea del Admin):** Una vez que el email del asesor está verificado, el **Administrador** (con su sesión iniciada) debe ir a su panel de administración, buscar al asesor pendiente y "activar" su cuenta.
+3.  **Acceso Concedido:** Al ser activado, el asesor recibirá un correo de bienvenida. A partir de ese momento, podrá iniciar sesión en el sistema y comenzar a crear cotizaciones.
