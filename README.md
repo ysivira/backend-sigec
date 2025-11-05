@@ -26,7 +26,6 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
     ```
 2.  Abre la siguiente URL en tu navegador:
     [**http://localhost:5000/api/docs**](http://localhost:5000/api/docs)
-    **(Nota: Esta es la ruta que tienes en tu archivo. Si no funciona, revisa la que definiste en tu `app.js` para `swaggerUi.serve`)**
 
 ---
 
@@ -43,12 +42,12 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
 3.  **Configura tus variables de entorno:**
     * Crea un archivo `.env` en la raíz del proyecto.
     * Usa el archivo `.env.example` como plantilla para configurar tus credenciales de base de datos y `JWT_SECRET`.
-    * **Importante:** Asegúrate de definir tanto `DB_NAME` (ej. `sigec_db`) como **`TEST_DB_NAME` (ej. `sigec_test`)**.
+    * **Importante:** Asegúrate de definir tanto `DB_NAME` (ej. `sigec_db`) como `TEST_DB_NAME` (ej. `sigec_test`).
 
 4.  **Prepara la Base de Datos de Desarrollo:**
     * **Esta configuración es solo para correr el servidor de desarrollo (`npm run dev`).**
     * Abre tu herramienta de base de datos (DBeaver, MySQL Workbench, etc.).
-    * Crea una nueva base de datos con el nombre que pusiste en **`DB_NAME`** en tu `.env` (ej. **`sigec_db`**).
+    * Crea una nueva base de datos con el nombre que pusiste en `DB_NAME` en tu `.env` (ej. `sigec_db`).
     * Abre esa base de datos y **ejecuta el script `schema.sql`** (que está en la raíz del proyecto) para crear todas las tablas.
 
 5.  **Inicia el servidor:**
