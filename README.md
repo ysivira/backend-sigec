@@ -87,7 +87,7 @@ Las pruebas se ejecutan contra la base de datos de prueba (definida en `TEST_DB_
 **Para ejecutar todas las pruebas:**
 ```bash
 npm test
-
+```
 ---
 
 ## **Primeros Pasos y Flujo de Trabajo**
