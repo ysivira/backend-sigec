@@ -27,10 +27,9 @@ const create = async (employeeData) => {
     (legajo, nombre, segundo_nombre, apellido, segundo_apellido, 
      email, telefono, direccion, password, 
      rol, estado, supervisor_id, fecha_creacion, email_confirmado,
-     reset_password_token, reset_password_expires -- 3. ¡Añadimos las columnas!
+     reset_password_token, reset_password_expires 
     ) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'asesor', 'inactivo', NULL, NOW(), 0, ?, ?)
-    -- 4. ¡Añadimos los '?'!
   `;
 
   const values = [

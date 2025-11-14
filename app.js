@@ -8,6 +8,7 @@
  */
 
 const express = require('express');
+const cors = require('cors');
 require('./config/db'); 
 const employeesRoutes = require('./routes/employeeRoutes');
 const planRoutes = require('./routes/planRoutes');
@@ -24,10 +25,12 @@ const swaggerSpec = require('./config/swaggerConfig');
 //====================================================
 const app = express();
 
+app.use(cors());
 //====================================================
 // MIDDLEWARES
 //====================================================
 app.use(express.json());
+
 
 // =======================================================
 // SEGURIDAD: LÍMITE GLOBAL (Defensa DoS)
