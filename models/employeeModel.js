@@ -60,7 +60,7 @@ const findByLegajo = async (legajo) => {
  * @returns {Promise<Array<object>>} Un array con los empleados encontrados.
  */
 const findAll = async (estado = null) => {
-  let query = 'SELECT legajo, nombre, apellido, email, rol, estado, supervisor_id FROM empleados';
+  let query = 'SELECT legajo, nombre, apellido, email, rol, estado, supervisor_id, email_confirmado FROM empleados';
   const params = [];
 
   if (estado) {

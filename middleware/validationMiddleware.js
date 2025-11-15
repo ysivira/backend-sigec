@@ -107,7 +107,7 @@ const validateEmployeeUpdate = [
     .withMessage(`El rol debe ser uno de: ${Object.values(ROLES).join(', ')}`),
 
   body('supervisor_id')
-    .optional()
+    .optional({nullable: true})
     .isNumeric().withMessage('El supervisor_id debe ser numérico.')
 ];
 
