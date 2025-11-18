@@ -66,7 +66,6 @@ const getPricesByType = asyncHandler(async (req, res) => {
  */
 const updatePriceEntry = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
   const dataToUpdate = req.body;
 
   if (Object.keys(dataToUpdate).length === 0) {

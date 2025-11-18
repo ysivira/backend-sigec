@@ -27,7 +27,6 @@ const { isAdmin } = require('../middleware/adminMiddleware');
 
 const {
   checkValidation,
-  validatePriceUpdate,
   validatePriceIncrease
 } = require('../middleware/validationMiddleware');
 
@@ -129,8 +128,6 @@ router.route('/:id')
   .put(
     protect, 
     isAdmin, 
-    validatePriceUpdate, 
-    checkValidation, 
     updatePriceEntry
   )
   .delete(protect, isAdmin, deletePriceEntry);
