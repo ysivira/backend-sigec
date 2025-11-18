@@ -203,7 +203,7 @@ router.post('/increase',
  *       401:
  *         description: No autorizado.
  */
-router.get('/plan/:planId/:tipoIngreso', protect, getPricesByPlan);
+router.get('/plan/:planId/:tipoLista', protect, getPricesByPlan);
 
 /**
  * @swagger
@@ -228,6 +228,6 @@ router.get('/plan/:planId/:tipoIngreso', protect, getPricesByPlan);
  *       401:
  *         description: No autorizado.
  */
-router.get('/type/:tipoIngreso', protect, getPricesByType);
+router.get('/type/:tipoLista', protect, getPricesByType);
 
 module.exports = router;

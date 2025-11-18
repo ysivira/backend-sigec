@@ -40,7 +40,18 @@ const createBulk = async (entries) => {
  * @returns {Promise<Array<object>>} Lista de precios para el plan y tipo de ingreso especificados.
  */
 const getByPlanId = async (planId, tipoIngreso) => {
-  const query = 'SELECT * FROM listas_de_precios WHERE plan_id = ? AND tipo_ingreso = ? AND activo = 1';
+  const query = `
+    SELECT * FROM listas_de_precios 
+    WHERE plan_id = ? AND tipo_ingreso = ? AND activo = 1 
+    ORDER BY
+      CASE
+        WHEN rango_etario LIKE 'MAT%' THEN 2
+        WHEN rango_etario LIKE 'HIJO%' THEN 3
+        WHEN rango_etario = 'FAMILIAR A CARGO' THEN 4
+        ELSE 1
+      END,
+      rango_etario ASC;
+  `;
   const [results] = await pool.query(query, [planId, tipoIngreso]);
   return results;
 };
@@ -51,7 +62,18 @@ const getByPlanId = async (planId, tipoIngreso) => {
  * @returns {Promise<Array<object>>} Lista de precios para el tipo de ingreso especificado.
  */
 const getByType = async (tipoIngreso) => {
-  const query = 'SELECT * FROM listas_de_precios WHERE tipo_ingreso = ? AND activo = 1';
+  const query = `
+    SELECT * FROM listas_de_precios 
+    WHERE tipo_ingreso = ? AND activo = 1 
+    ORDER BY
+      CASE
+        WHEN rango_etario LIKE 'MAT%' THEN 2
+        WHEN rango_etario LIKE 'HIJO%' THEN 3
+        WHEN rango_etario = 'FAMILIAR A CARGO' THEN 4
+        ELSE 1
+      END,
+      rango_etario ASC;
+  `;
   const [results] = await pool.query(query, [tipoIngreso]);
   return results;
 };
@@ -63,9 +85,26 @@ const getByType = async (tipoIngreso) => {
  * @returns {Promise<object>} Resultado de la operación de actualización.
  */
 const update = async (id, priceData) => {
-  const { rango_etario, precio } = priceData;
-  const query = 'UPDATE listas_de_precios SET rango_etario = ?, precio = ? WHERE id = ?';
-  const [result] = await pool.query(query, [rango_etario, precio, id]);
+  const fields = [];
+  const values = [];
+  
+  if (priceData.precio !== undefined) {
+    fields.push('precio = ?');
+    values.push(priceData.precio);
+  }
+  if (priceData.rango_etario !== undefined) {
+    fields.push('rango_etario = ?');
+    values.push(priceData.rango_etario);
+  }
+
+  if (fields.length === 0) {
+    return { affectedRows: 0 };
+  }
+
+  const query = `UPDATE listas_de_precios SET ${fields.join(', ')} WHERE id = ?`;
+  values.push(id); 
+
+  const [result] = await pool.query(query, values);
   return result;
 };
 

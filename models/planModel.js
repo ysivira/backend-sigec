@@ -51,7 +51,7 @@ const getById = async (id) => {
  * @returns {Promise<Array<object>>} Lista de todos los planes.
  */
 const getAllAdmin = async () => {
-  const query = 'SELECT * FROM planes ORDER BY nombre';
+  const query = 'SELECT * FROM planes ORDER BY id ASC';
   const [results] = await pool.query(query);
   return results;
 };

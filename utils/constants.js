@@ -72,6 +72,36 @@ const TIPOS_INGRESO = {
   MONOTRIBUTO: 'Monotributo'
 };
 
+const RANGOS_ETARIOS = [
+  // Titulares
+  '0-25',
+  '26-35',
+  '36-40',
+  '41-50',
+  '51-60',
+  '61-65',
+  '66-00',
+  
+  // Matrimonios
+  'MAT 0-25',
+  'MAT 26-35',
+  'MAT 36-40',
+  'MAT 41-50',
+  'MAT 51-60',
+  'MAT 61-65',
+  'MAT 66-00', 
+  
+  // Hijos
+  'HIJO 0-1',
+  'HIJO 2-20',
+  'HIJO 21-29',
+  'HIJO 30-39',
+  'HIJO 40-49',
+  
+  // Otros 
+  'FAMILIAR A CARGO' 
+];
+
 /**
  * @description Opciones para otros descuentos.
  * @type {string[]}
@@ -91,5 +121,6 @@ module.exports = {
   DESCUENTOS_AFINIDAD,
   CATEGORIAS_MONOTRIBUTO,
   TIPOS_INGRESO,
-  OTROS_DESCUENTOS_OPCIONES
+  OTROS_DESCUENTOS_OPCIONES,
+  RANGOS_ETARIOS
 };
