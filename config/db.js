@@ -23,11 +23,13 @@ if (process.env.NODE_ENV !== 'test') {
  * @description Pool de conexiones a la base de datos MySQL.
  * @type {import('mysql2').Pool}
  */
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
+    host: isTestEnv ? process.env.TEST_DB_HOST : process.env.DB_HOST,
+    user: isTestEnv ? process.env.TEST_DB_USER : process.env.DB_USER,
+    password: isTestEnv ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
+    database: isTestEnv ? process.env.TEST_DB_NAME : process.env.DB_DATABASE,
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,

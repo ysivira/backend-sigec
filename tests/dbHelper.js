@@ -8,10 +8,10 @@ const path = require('path');
 
 // Creamos un pool de conexión ESPECÍFICO para las pruebas, usará las variables de entorno que 'setup.js', se conectará a 'sigec_test'
 const testPool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_DATABASE, 
+  host: process.env.TEST_DB_HOST,
+  user: process.env.TEST_DB_USER,
+  password: process.env.TEST_DB_PASSWORD,
+  database: process.env.TEST_DB_NAME,
   port: process.env.DB_PORT || 3306,
   multipleStatements: true, 
 });
