@@ -33,7 +33,7 @@ Toda la documentación interactiva de la API, donde se pueden probar todos los e
 
 Este es el Diagrama de Entidad-Relación que muestra la estructura de la base de datos de SIGEC.
 
-![Diagrama de Entidad-Relación de SIGEC](docs/diagrama_der.png)
+![Diagrama de Entidad-Relación de SIGEC](docs/diagrama_der_v2.png)
 
 ---
 
@@ -55,7 +55,7 @@ Este es el Diagrama de Entidad-Relación que muestra la estructura de la base de
     * **Esta configuración es solo para correr el servidor de desarrollo (`npm run dev`).**
     * Abre tu herramienta de base de datos (DBeaver, MySQL Workbench, etc.).
     * Crea una nueva base de datos con el nombre que pusiste en `DB_NAME` en tu `.env` (ej. `sigec_db`).
-    * **Paso 4a:** Abre esa base de datos y **ejecuta el script `schema.sql`** (para crear las tablas vacías).
+    * **Paso 4a:** Abre esa base de datos y **ejecuta el script `schema_v2.sql`** (para crear las tablas vacías).
     * **Paso 4b:** Inmediatamente después, **ejecuta el script `data.sql`** (para cargar los datos de ejemplo y el usuario admin).
 
 5.  **Inicia el servidor:**

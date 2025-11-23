@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
  * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
 const sendPasswordResetEmail = async (to, token) => {
-  const resetUrl = `http://localhost:3000/reset-password/${token}`; // URL del Frontend
+  const resetUrl = `http://localhost:5173/reset-password/${token}`; // URL del Frontend
 
   // Contenido del email 
   const mailOptions = {
@@ -67,8 +67,8 @@ const sendPasswordResetEmail = async (to, token) => {
  * @param {string} legajo - El legajo del asesor.
  * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
-const sendActivationEmail = async (to, legajo) => {
-  const activationUrl = `http://localhost:3000/confirm-email/${legajo}`; // URL del Frontend 
+const sendActivationEmail = async (to, legajo, token) => {
+  const activationUrl = `http://localhost:5173/confirm-email/${token}`; // URL del Frontend
 
   const mailOptions = {
     from: `"SIGEC Admin" <${process.env.EMAIL_USER}>`,
@@ -102,7 +102,7 @@ const sendActivationEmail = async (to, legajo) => {
  * @returns {Promise<object>} El objeto de información de Nodemailer.
  */
 const sendWelcomeEmail = async (to, nombre) => {
-  const loginUrl = `http://localhost:3000/login`; // URL del Frontend
+  const loginUrl = `http://localhost:5173/login`; // URL del Frontend
 
   const mailOptions = {
     from: `"SIGEC Admin" <${process.env.EMAIL_USER}>`,

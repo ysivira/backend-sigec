@@ -6,22 +6,19 @@
 -- -----------------------------------------------------------
 */
 
-/* 1. Planes (Basados en [35-1044], modificados según [35-1040]) */
-/* Se renombra 'Plan RUBÍ' a 'Basico' y 'Plan ZAFIRO' a 'Premium' */
-/* Se omiten los planes 2 y 4 para un semillado limpio */
+/* Planes de Salud */
 LOCK TABLES `planes` WRITE;
 INSERT INTO `planes` VALUES 
 (1,'Basico','Análisis de Laboratorio| SC-ST-SL|NO\nCirugía de Ojos Excimer Láser (1 año de permanencia)| 50% CT-CL|NO\nConsultas – Consultorio | SC-ST-SL|NO\nConsultas – Domicilio| CC-ST-SL|NO\nFonoaudiología| SC-CT (40 Sesiones)|NO\nInternaciones Clínicas y/o Quirúrgicas| SC-ST-SL|NO\nInternaciones Psiquiátricas| SC-CT (30 días)|NO\nKinesiología – Fisiatría| SC-CT (25 sesiones)|NO\nMaterial Descartable Internación | 100%|NO\nMaternidad | 100%|NO\nMedicamentos Ambulatorios| 40%|NO\nMedicamentos en Internación| 100%|NO\nMedicamentos Oncológicos (según P.M.O.)| 100%|NO\nOdontología General| SC-ST-SL|NO\nOrtesis Nacionales (según P.M.O.)| 50%|NO\nPlan Materno Infantil| 100%|NO\nPrácticas Médicas de Diagnóstico y Tratamiento| SC-ST-SL|NO\nPrótesis Nacionales (según P.M.O.)| 100%|NO\nPsicología – Psiquiatría| CC-CT (30 sesiones)|NO\nTipo de Habitación| Compartida|NO\nTipo de Habitación Maternal| Compartida|NO\nUnidad de Terapia Intensiva| SC-ST-SL|NO','Cobertura: BRASIL.\n\nReferencias: SC (Sin Cargo) | ST (Sin Tope) | SL (Sin Límite) | CC (Con Cargo) | CT (Con Tope) | CL (Con Límite) | NA (No Acumulable)',1),
 (3,'Premium','Análisis de Laboratorio | SC-ST-SL | CT-CL \n Cirugía de Ojos Excimer Láser (1 año de permanencia) | CT-CL |CT-CL \n  Consultas - Consultorio | SC-ST-SL | CT-CL\n Consultas Domicilio | CC-ST-SL | CT-CL\n Cirugía Estética (2 años de permanencia)| CT-CL (1 cada 4 años aniversario) | CT-CL  \n  Escleroterapia | SC-CT (8 sesiones por año aniversario) |CT-CL (por año aniversario) \n Fonoaudiología | SC-CT (56 Sesiones) | CT-CL\n Internaciones Clínicas y/o Quirúrgicas | SC-ST-SL | CT-CL\n Acompañante en Internación (hasta 17 años inclusive) | 100% |CT-CL \n Acompañante en Internación (mayores de 18 años con autorización expresa de Auditoria Médica | SC-CT-CL (3 días por año) | CT-CL  \n Internaciones Psiquiátricas | SC-CT (60 sesiones) | NO\n  Kinesiología - Fisiatría | SC-CT (40 sesiones) | CT-CL\n Material Descartable Internación | 100% | CT-CL\n Maternidad | 100% | CT-CL\n Medicamentos Ambulatorios | 40% | NO \n Medicamentos en Internación | 100% | CT-CL\n Medicamentos Oncológicos (según P.M.O.) | 100% | NO\n Odontología General | SC-ST-SL | CT (por año NA) \n Odontología –Blanqueamiento Dental | Por Reintegro| CT (1 cada 4 años) \n Odontología – Implantes (1 año de permanencia) | Por Reintegro | CT (por año NA) \n Odontología – Prótesis (1 año de permanencia) | CT-CL (por año NA) \n Ortodoncia (de 8 a 18 años por única vez) | Por Reintegro | CT-CL (por año NA) \n Ortesis Nacionales (según P.M.O.) | 50% | CT-CL\n  Plan Materno Infantil | 100%| CT-CL\n Prácticas Médicas de Diagnóstico y Tratamiento | SC-ST-SL | CT-CL\n Prótesis Nacionales (según P.M.O.) | 100% | NO \n Psicología - Psiquiatría | CC-CT (30 sesiones) | CT-CL (60 sesiones) \n Servicio de Asistencia al Viajero. Cobertura Internacional | CT-CL |NO\n Tipo de Habitación | Individual | CT-CL\n Tipo de Habitación Maternal | Individual | CT-CL\n  Unidad de Terapia Intensiva | SC-ST-SL | CT-CL','Servicio de Asistencia al Viajero. Cobertura Internacional. Tratado de Schengen.\n\nReferencias: SC (Sin Cargo) | ST (Sin Tope) | SL (Sin Límite) | CC (Con Cargo) | CT (Con Tope) | CL (Con Límite) | NA (No Acumulable)',1);
 UNLOCK TABLES;
 
-/* 2. Aportes de Monotributo (Datos de [35-1044]) */
+/* Aportes de Monotributo */
 LOCK TABLES `monotributo_aportes` WRITE;
 INSERT INTO `monotributo_aportes` VALUES (1,'A',16353.97),(2,'B',16353.97),(3,'C',16353.97),(4,'D',19435.17),(5,'E',23701.42),(6,'F',27256.64),(7,'G',29389.76),(8,'H',35315.11),(9,'I',43610.62),(10,'J',48943.43),(11,'K',55935.36),(12,'Adherente',14208.87);
 UNLOCK TABLES;
 
-/* 3. Listas de Precios (Datos de [35-1044], modificados según [35-1040]) */
-/* Precios de plan_id 1 y 3 reducidos en 23%. Se omiten planes 2 y 4. */
+/* Listas de Precios  */
 LOCK TABLES `listas_de_precios` WRITE;
 INSERT INTO `listas_de_precios` VALUES 
 (1,1,'Lista General 2025','Obligatorio','0-25',129228.84,1),
@@ -108,7 +105,7 @@ INSERT INTO `listas_de_precios` VALUES
 (162,1,'Obligatorio','monotributo','18-25',15400.00,1);
 UNLOCK TABLES;
 
-/* 4. Usuario Administrador (Según [35-1037]) */
+/* Usuario Administrador */
 /*
    Legajo: admin
    Clave:  admin2025*

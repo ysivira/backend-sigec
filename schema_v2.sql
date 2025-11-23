@@ -42,7 +42,7 @@ CREATE TABLE `clientes` (
   KEY `asesor_captador_id` (`asesor_captador_id`),
   KEY `idx_apellidos` (`apellidos`),
   CONSTRAINT `clientes_ibfk_1` FOREIGN KEY (`asesor_captador_id`) REFERENCES `empleados` (`legajo`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -89,7 +89,7 @@ CREATE TABLE `cotizaciones` (
   CONSTRAINT `cotizaciones_ibfk_2` FOREIGN KEY (`asesor_id`) REFERENCES `empleados` (`legajo`) ON DELETE CASCADE,
   CONSTRAINT `cotizaciones_ibfk_3` FOREIGN KEY (`plan_id`) REFERENCES `planes` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_cotizaciones_clientes_id` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -116,6 +116,8 @@ CREATE TABLE `empleados` (
   `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `reset_password_token` varchar(255) DEFAULT NULL,
   `reset_password_expires` datetime DEFAULT NULL,
+  `activation_token` varchar(255) DEFAULT NULL,
+  `activation_token_expires` datetime DEFAULT NULL,
   PRIMARY KEY (`legajo`),
   UNIQUE KEY `email` (`email`),
   KEY `supervisor_id` (`supervisor_id`),
@@ -142,7 +144,7 @@ CREATE TABLE `listas_de_precios` (
   PRIMARY KEY (`id`),
   KEY `plan_id` (`plan_id`),
   CONSTRAINT `listas_de_precios_ibfk_1` FOREIGN KEY (`plan_id`) REFERENCES `planes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=163 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=171 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,7 +163,7 @@ CREATE TABLE `miembros_cotizacion` (
   PRIMARY KEY (`id`),
   KEY `cotizacion_id` (`cotizacion_id`),
   CONSTRAINT `miembros_cotizacion_ibfk_1` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizaciones` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -195,7 +197,7 @@ CREATE TABLE `planes` (
   `activo` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -207,4 +209,4 @@ CREATE TABLE `planes` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-04 14:13:10
+-- Dump completed on 2025-11-23 14:56:35

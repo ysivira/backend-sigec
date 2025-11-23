@@ -19,6 +19,7 @@ const {
   getPlanById,
   updatePlan,
   deletePlan,
+  getActivePlans,
 } = require('../controllers/planController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -29,6 +30,18 @@ const {
   validatePlanCreation,
   validatePlanUpdate,
 } = require('../middleware/validationMiddleware');
+
+/**
+ * @swagger
+ * /plans:
+ *   get:
+ *     tags: [Planes]
+ *     summary: Obtiene solo los planes activos (para asesores/cotizador)
+ *     responses:
+ *       200:
+ *         description: Lista de planes.
+ */
+router.get('/active', protect, getActivePlans);
 
 // MIDLEWARE: Proteger todas las rutas y permitir solo a administradores
 router.use(protect, isAdmin);

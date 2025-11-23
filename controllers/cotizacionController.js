@@ -1,6 +1,16 @@
 //============================================================================
-// CONTROLADOR DE COTIZACIONES
+// CONTROLADOR DE COTIZACIONES 
 //============================================================================
+/**
+ * @file clienteController.js
+ * @description Controlador para gestionar las operaciones relacionadas con las cotizaciones.
+ * @requires express-async-handler
+ * @requires ../models/cotizacionModel
+ * @requires ../models/clienteModel
+ * @requires ../models/planModel
+ * @requires ../service/calculoService
+ * @requires ../service/pdfService
+ */
 
 const asyncHandler = require('express-async-handler');
 const Cotizacion = require('../models/cotizacionModel');
@@ -10,24 +20,35 @@ const calculoService = require('../service/calculoService');
 const pdfService = require('../service/pdfService');
 
 /**
- * @desc    Verificar si un DNI ya tiene cotización
- * @route   GET /api/cotizaciones/verify-dni/:dni
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
+ * Pre-calcular una cotización (Solo matemática, no guarda)
+ */
+const calculateQuote = asyncHandler(async (req, res) => {
+    const { cotizacionData, miembrosData } = req.body;
+    if (!cotizacionData || !miembrosData) {
+        res.status(400);
+        throw new Error("Faltan datos requeridos.");
+    }
+    const resultado = await calculoService.calcularCotizacion(cotizacionData, miembrosData);
+    res.status(200).json(resultado);
+});
+
+/**
+ * Verificar DNI y devolver datos si existe
  */
 const verifyDni = asyncHandler(async (req, res) => {
     let { dni } = req.params;
-    dni = dni.replace(':', '');
+    dni = dni.replace(':', ''); 
     const asesor_logueado_legajo = req.employee.legajo;
     const clienteExistente = await Cliente.findByDni(dni);
 
     if (!clienteExistente) {
         return res.status(200).json({
             existe: false,
-            message: 'Cliente no encontrado. Puede proceder a crear una nueva cotización.'
+            message: 'Cliente no encontrado. Puede proceder.'
         });
     }
+
+    const ciudadRecuperada = clienteExistente.direccion || clienteExistente.ciudad || clienteExistente.localidad || '';
 
     const baseResponse = {
         cliente: {
@@ -36,6 +57,9 @@ const verifyDni = asyncHandler(async (req, res) => {
             nombres: clienteExistente.nombres,
             apellidos: clienteExistente.apellidos,
             telefono: clienteExistente.telefono,
+            email: clienteExistente.email,
+            ciudad: ciudadRecuperada,
+            direccion: ciudadRecuperada
         },
     };
 
@@ -44,7 +68,7 @@ const verifyDni = asyncHandler(async (req, res) => {
         return res.status(200).json({
             existe: true,
             cotizado_por_mi: true,
-            message: 'Cliente encontrado. Puede crear una nueva cotización.',
+            message: 'Cliente encontrado.',
             ...baseResponse,
             ultima_cotizacion: null
         });
@@ -53,20 +77,25 @@ const verifyDni = asyncHandler(async (req, res) => {
     const asesorCotizadorLegajo = ultimaCotizacion.asesor_legajo;
     if (asesorCotizadorLegajo === asesor_logueado_legajo) {
         const cotizacionCompleta = await Cotizacion.findCotizacionById(ultimaCotizacion.cotizacion_id);
+        
+        if (cotizacionCompleta.cliente) {
+            cotizacionCompleta.cliente.ciudad = ciudadRecuperada;
+            cotizacionCompleta.cliente.direccion = ciudadRecuperada;
+        }
 
         return res.status(200).json({
             existe: true,
             cotizado_por_mi: true,
-            message: 'Cliente ya cotizado por usted. Puede modificar la última cotización o crear una nueva.',
+            message: 'Cliente ya cotizado por usted.',
             ...baseResponse,
             datosParaRecotizar: cotizacionCompleta
         });
     } else {
-        const fechaFormateada = ultimaCotizacion.fecha_creacion ? new Date(ultimaCotizacion.fecha_creacion).toLocaleDateString('es-AR') : 'Fecha no disponible';
-        return res.status(409).json({
+        const fechaFormateada = ultimaCotizacion.fecha_creacion ? new Date(ultimaCotizacion.fecha_creacion).toLocaleDateString('es-AR') : '-';
+        return res.status(200).json({
             existe: true,
             cotizado_por_mi: false,
-            message: `El cliente ya se encuentra cotizado por el asesor ${ultimaCotizacion.asesor_nombre} ${ultimaCotizacion.asesor_apellido} en fecha ${fechaFormateada}.`,
+            message: `Cliente ya cotizado por ${ultimaCotizacion.asesor_nombre} ${ultimaCotizacion.asesor_apellido} el ${fechaFormateada}.`,
             ...baseResponse,
             asesor_cotizador: {
                 nombre: ultimaCotizacion.asesor_nombre,
@@ -78,134 +107,102 @@ const verifyDni = asyncHandler(async (req, res) => {
     }
 });
 
-/**
- * Busca un cliente por DNI o crea uno nuevo si no existe.
- * @private
- * @param {object} clienteData - Datos del cliente.
- * @param {number} asesor_id - ID del asesor que crea el cliente.
- * @returns {Promise<number>} El ID del cliente existente o recién creado.
- */
 const _getClienteId = async (clienteData, asesor_id) => {
-    const clienteExistente = await Cliente.findByDni(clienteData.dni);
+    const { dni, nombres, apellidos, email, telefono, ciudad, direccion } = clienteData;
+
+    if (!dni || !nombres || !apellidos || !email || !telefono) {
+        throw new Error('Faltan datos del cliente.');
+    }
+
+    
+    const ubicacionFinal = direccion || ciudad || '';
+
+    const datosCliente = {
+        dni, nombres, apellidos, email, telefono,
+        ciudad: ubicacionFinal,    
+        direccion: ubicacionFinal,
+        asesor_captador_id: asesor_id
+    };
+
+    // Verificar existencia
+    const clienteExistente = await Cliente.findByDni(dni);
 
     if (clienteExistente) {
+        try {
+            if (typeof Cliente.update === 'function') {
+                await Cliente.update(clienteExistente.id, datosCliente);
+            }
+        } catch (err) {
+            console.error("No se pudo actualizar el cliente existente:", err);
+        }
         return clienteExistente.id;
     }
 
-    // Si no existe, validamos los campos mínimos para crear
-    const { dni, nombres, apellidos, email, telefono } = clienteData;
-    if (!dni || !nombres || !apellidos || !email || !telefono) {
-        throw new Error('Faltan datos de cliente (nombre, apellido, email, telefono) para crear un nuevo registro.');
-    }
-
-    // Creamos el cliente
-    const resultCliente = await Cliente.create({
-        ...clienteData,
-        asesor_captador_id: asesor_id
-    });
-
+    const resultCliente = await Cliente.create(datosCliente);
     return resultCliente.insertId;
 };
 
 /**
- * @desc    Crear una nueva cotización
- * @route   POST /api/cotizaciones
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
+ * Crear cotización final
  */
 const createCotizacion = asyncHandler(async (req, res) => {
     const { clienteData, cotizacionData, miembrosData } = req.body;
     const asesor_id = req.employee.legajo;
 
-    // Gestión de Cliente (Buscar o Crear)
     let cliente_id;
     try {
         cliente_id = await _getClienteId(clienteData, asesor_id);
     } catch (error) {
-        res.status(400); // Error de datos del cliente
+        res.status(400);
         throw error;
     }
 
     if (!cliente_id) {
         res.status(500);
-        throw new Error('Error al procesar el ID del cliente.');
+        throw new Error('Error al procesar cliente.');
     }
 
-    const { plan_id } = cotizacionData;
-    const nuevoConteoMiembros = miembrosData ? miembrosData.length : 0;
-
-    if (nuevoConteoMiembros > 0) {
-        const duplicado = await Cotizacion.findActiveCotizacionByPlanAndMemberCount(
-            cliente_id,
-            asesor_id,
-            plan_id,
-            nuevoConteoMiembros
-        );
-
-        if (duplicado) {
-            res.status(409); // 409 Conflict (Conflicto)
-            throw new Error(`Ya existe una cotización activa (ID: ${duplicado.id}) para este cliente, este plan y la misma cantidad de miembros. Por favor, anule la cotización anterior si desea crear una nueva.`);
-        }
-    }
-
+    // Calcular final
     const { cotizacionCalculada, miembrosConPrecios } = await calculoService.calcularCotizacion(
-        cotizacionData,
-        miembrosData
+        cotizacionData, miembrosData
     );
 
-    //  Prepara el objeto final para la DB
     const fullCotizacionData = {
         ...cotizacionCalculada,
         cliente_id: cliente_id,
         asesor_id: asesor_id
     };
 
-    // Guardar en la DB 
     const result = await Cotizacion.createFullCotizacion(fullCotizacionData, miembrosConPrecios);
-    res.status(201).json(result); 
+    res.status(201).json(result);
 });
 
-/**
- * @desc    Actualizar una cotización
- * @route   PUT /api/cotizaciones/:id
- * @access  Private
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
- */
 const updateCotizacion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
     const { clienteData, cotizacionData, miembrosData } = req.body;
 
-    // Verificar Autorización (Que la cotización exista y le pertenezca)
     const cotizacionExistente = await Cotizacion.findCotizacionById(id);
     if (!cotizacionExistente) {
-        res.status(404);
-        throw new Error('Cotización no encontrada.');
+        res.status(404); throw new Error('Cotización no encontrada.');
     }
     if (cotizacionExistente.asesor_id !== asesor_logueado_legajo) {
-        res.status(403);
-        throw new Error('No autorizado para modificar esta cotización.');
+        res.status(403); throw new Error('No autorizado.');
     }
-    // Gestión de Cliente (Buscar o Crear)
+
+    // Actualizar cliente también al editar
+    if (clienteData) {
+        await _getClienteId(clienteData, asesor_logueado_legajo);
+    }
+    
     const { cotizacionCalculada, miembrosConPrecios } = await calculoService.calcularCotizacion(
-        cotizacionData,
-        miembrosData
+        cotizacionData, miembrosData
     );
 
-    // Guardar en la DB 
     const result = await Cotizacion.updateFullCotizacion(id, cotizacionCalculada, miembrosConPrecios);
     res.status(200).json(result);
 });
 
-/**
- * @desc    Obtener una cotización completa por ID
- * @route   GET /api/cotizaciones/:id
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
- */
 const getCotizacionById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
@@ -213,109 +210,63 @@ const getCotizacionById = asyncHandler(async (req, res) => {
 
     if (cotizacionCompleta) {
         if (cotizacionCompleta.asesor_id !== asesor_logueado_legajo) {
-            res.status(403);
-            throw new Error('No tiene permisos para ver esta cotización.');
+            res.status(403); throw new Error('No tiene permisos.');
         }
         res.status(200).json(cotizacionCompleta);
     } else {
-        res.status(404);
-        throw new Error('Cotización no encontrada.');
+        res.status(404); throw new Error('Cotización no encontrada.');
     }
 });
 
-/**
- * @desc    Obtener todas las cotizaciones de un asesor
- * @route   GET /api/cotizaciones/asesor
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
- */
 const getCotizacionesByAsesor = asyncHandler(async (req, res) => {
     const asesor_logueado_legajo = req.employee.legajo;
     const cotizaciones = await Cotizacion.findCotizacionesByAsesor(asesor_logueado_legajo);
     res.status(200).json(cotizaciones);
 });
 
-/**
- * @desc    Anular una cotización
- * @route   PUT /api/cotizaciones/anular/:id
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
- */
 const anularCotizacion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
-
     const cotizacion = await Cotizacion.findCotizacionById(id);
     if (!cotizacion) {
-        res.status(404);
-        throw new Error('Cotización no encontrada.');
+        res.status(404); throw new Error('Cotización no encontrada.');
     }
-
     if (cotizacion.asesor_id !== asesor_logueado_legajo) {
-        res.status(403);
-        throw new Error('No autorizado para anular esta cotización.');
+        res.status(403); throw new Error('No autorizado.');
     }
-
     const result = await Cotizacion.anularCotizacion(id);
     if (result.affectedRows > 0) {
-        res.status(200).json({ message: 'Cotización anulada exitosamente.' });
+        res.status(200).json({ message: 'Anulada exitosamente.' });
     } else {
-        res.status(400);
-        throw new Error('Error al anular la cotización.');
+        res.status(400); throw new Error('Error al anular.');
     }
 });
 
-/**
- * @desc    Generar y descargar una cotización en PDF
- * @route   GET /api/cotizaciones/:id/pdf
- * @access  Private (Asesor)
- * @param {object} req - El objeto de solicitud de Express.
- * @param {object} res - El objeto de respuesta de Express.
- */
 const getCotizacionPDF = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const asesor_logueado_legajo = req.employee.legajo;
-
-    // Obtener los datos completos
     const cotizacionCompleta = await Cotizacion.findCotizacionById(id);
 
     if (!cotizacionCompleta) {
-        res.status(404);
-        throw new Error('Cotización no encontrada.');
+        res.status(404); throw new Error('Cotización no encontrada.');
     }
-
-    // Validar permisos 
     if (cotizacionCompleta.asesor_id !== asesor_logueado_legajo) {
-        res.status(403);
-        throw new Error('No tiene permisos para ver esta cotización.');
+        res.status(403); throw new Error('No tiene permisos.');
     }
 
     try {
-        // Preparar la respuesta HTTP para que el navegador descargue un PDF
-        const nombreArchivo = `Cotizacion_${cotizacionCompleta.id}_${cotizacionCompleta.cliente.dni}.pdf`;
+        const nombreArchivo = `Cotizacion_${cotizacionCompleta.id}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
-
-        // Crear el pdf y enviarlo en la respuesta; Si falla, el catch local atrapará el error.
         pdfService.generarCotizacionPDF(cotizacionCompleta, res);
-
     } catch (error) {
-        // Error síncrono durante la generación del PDF
-        console.error("Error síncrono en getCotizacionPDF:", error);
-
-        // Si 'headersSent' es true, el stream ya empezó. No podemos enviar JSON. Solo podemos destruir el stream.
-        if (res.headersSent) {
-            res.destroy(error);
-        } else {
-            // Si los headers no se enviaron, algo falló antes.
-            res.destroy(error);
-        }
+        console.error("Error PDF:", error);
+        if (res.headersSent) res.destroy(error); else res.destroy(error);
     }
 });
 
 module.exports = {
+    calculateQuote,
     verifyDni,
     createCotizacion,
     getCotizacionById,

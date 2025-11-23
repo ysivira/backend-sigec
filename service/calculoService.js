@@ -1,6 +1,13 @@
 //============================================================================
 // SERVICE: CÁLCULO DE COTIZACIONES 
 //============================================================================
+/**
+ * @file calculoService.js
+ * @description Servicio encargado del cálculo de cotizaciones.
+ * @requires ../models/priceListModel
+ * @requires ../models/monotributoModel
+ * @requires ../utils/constants
+ */ 
 
 const priceListModel = require('../models/priceListModel');
 const monotributoModel = require('../models/monotributoModel');
@@ -102,7 +109,7 @@ const calcularCotizacion = async (cotizacionData, miembrosData) => {
 
     const descComercialPct = parseFloat(descuento_comercial_pct) || 0;
     const descAfinidadPct = parseFloat(descuento_afinidad_pct) || 0;
-    const descTarjetaPct = parseFloat(descuento_tarjeta_pct) || 0; // <-- NUEVO
+    const descTarjetaPct = parseFloat(descuento_tarjeta_pct) || 0; 
     const esCasadoBool = es_casado === true || es_casado === 1 || es_casado === 'true';
 
     // Calcula Precio Base 
@@ -155,25 +162,37 @@ const calcularCotizacion = async (cotizacionData, miembrosData) => {
     }
 
     // Cálculo Descuentos $ y Subtotal 
-    const valor_descuento_comercial = parseFloat(((valor_base_plan * descuento_comercial_pct_final) / 100).toFixed(2));
-    const valor_descuento_afinidad = parseFloat(((valor_base_plan * descuento_afinidad_pct_final) / 100).toFixed(2));
-    const valor_descuento_joven = parseFloat(((valor_base_plan * descuento_joven_pct_final) / 100).toFixed(2)); 
-    const valor_descuento_tarjeta = parseFloat(((valor_base_plan * descuento_tarjeta_pct_final) / 100).toFixed(2));
+     let saldo = valor_base_plan;
 
-    const subtotal = parseFloat((
-        valor_base_plan -
-        valor_descuento_comercial -
-        valor_descuento_afinidad -
-        valor_descuento_joven -
-        valor_descuento_tarjeta
-    ).toFixed(2));
+    // A) Descuento Afinidad
+    const valor_descuento_afinidad = parseFloat(((saldo * descAfinidadPct) / 100).toFixed(2));
+    saldo -= valor_descuento_afinidad;
+
+    // B) Descuento Comercial
+    const valor_descuento_comercial = parseFloat(((saldo * descComercialPct) / 100).toFixed(2));
+    saldo -= valor_descuento_comercial;
+
+    // C) Descuento Joven (Si aplica)
+    const valor_descuento_joven = parseFloat(((saldo * descJovenPct) / 100).toFixed(2));
+    saldo -= valor_descuento_joven;
+
+    // D) Descuento Tarjeta (Último descuento porcentual)
+    const valor_descuento_tarjeta = parseFloat(((saldo * descTarjetaPct) / 100).toFixed(2));
+    saldo -= valor_descuento_tarjeta;
+
+    // Subtotal neto antes de impuestos/aportes
+    const subtotal = parseFloat(saldo.toFixed(2));
+
+    // Calculamos el total descontado para referencia (informativo)
+    const valor_descuento_total = parseFloat((valor_base_plan - subtotal).toFixed(2));
 
     // Lógica Aportes/Impuestos 
-    let valor_total = 0;
+    let valor_total = subtotal;
     let sueldo_bruto = 0;
     let valor_aportes_estimados = 0;
     let valor_aporte_monotributo = 0;
     let valor_iva = 0;
+    
     const aporteOSNum = parseFloat(aporte_obra_social) || 0;
     const adherentesMono = parseInt(monotributo_adherentes) || 0;
 

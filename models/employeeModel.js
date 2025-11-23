@@ -18,8 +18,8 @@ const create = async (employeeData) => {
   const {
     legajo, nombre, segundo_nombre, apellido, segundo_apellido,
     email, telefono, direccion, hashedPassword,
-    reset_password_token, 
-    reset_password_expires
+    activation_token, 
+    activation_token_expires
   } = employeeData;
 
   const query = `
@@ -27,7 +27,7 @@ const create = async (employeeData) => {
     (legajo, nombre, segundo_nombre, apellido, segundo_apellido, 
      email, telefono, direccion, password, 
      rol, estado, supervisor_id, fecha_creacion, email_confirmado,
-     reset_password_token, reset_password_expires 
+     activation_token, activation_token_expires 
     ) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'asesor', 'inactivo', NULL, NOW(), 0, ?, ?)
   `;
@@ -35,8 +35,8 @@ const create = async (employeeData) => {
   const values = [
     legajo, nombre, segundo_nombre, apellido, segundo_apellido,
     email, telefono, direccion, hashedPassword,
-    reset_password_token, 
-    reset_password_expires
+    activation_token, 
+    activation_token_expires
   ];
 
   const [result] = await pool.query(query, values);
@@ -141,12 +141,12 @@ const updateDetails = async (legajo, data) => {
 };
 
 /**
- * Marca el email de un empleado como confirmado (email_confirmado = 1).
+ * Marca el email de un empleado como confirmado (email_confirmado = 1) y limpia el token de activación.
  * @param {string|number} legajo - El legajo del empleado.
  * @returns {Promise<object>} Resultado de la operación de actualización.
  */
 const confirmEmail = async (legajo) => {
-  const query = 'UPDATE empleados SET email_confirmado = 1 WHERE legajo = ? AND email_confirmado = 0';
+  const query = 'UPDATE empleados SET email_confirmado = 1, activation_token = NULL, activation_token_expires = NULL WHERE legajo = ? AND email_confirmado = 0';
   const [result] = await pool.query(query, [legajo]);
   return result;
 };
@@ -183,6 +183,24 @@ const saveResetToken = async (legajo, token, expires) => {
   } catch (error) {
     console.error('Error en saveResetToken (Model):', error);
     throw new Error('Error al guardar el token de reseteo.');
+  }
+};
+
+/**
+ * Busca un empleado por un token de activación válido (no expirado).
+ * @param {string} token - El token de activación hasheado.
+ * @returns {Promise<object|undefined>} El objeto del empleado si se encuentra, de lo contrario undefined.
+ */
+const findByActivationToken = async (token) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM empleados WHERE activation_token = ? AND activation_token_expires > NOW()',
+      [token]
+    );
+    return rows[0];
+  } catch (error) {
+    console.error('Error en findByActivationToken (Model):', error);
+    throw new Error('Error al buscar por token de activación.');
   }
 };
 
@@ -231,6 +249,7 @@ module.exports = {
   confirmEmail,
   findByEmail,
   saveResetToken,
+  findByActivationToken,
   findByResetToken,
   updatePasswordAndClearToken,
 };

@@ -37,9 +37,9 @@ app.use(express.json());
 // =======================================================
 // Middleware para limitar la cantidad de peticiones por IP
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Límite: 100 peticiones por IP cada 15 minutos
-  message: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo después de 15 minutos',
+  windowMs: 10 * 60 * 1000, // 10 minutos
+  max: 100, // Límite: 100 peticiones por IP cada 10 minutos
+  message: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo después de 10 minutos',
   standardHeaders: true, 
   legacyHeaders: false,
 });

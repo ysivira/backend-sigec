@@ -13,6 +13,7 @@
 const express = require('express');
 const router = express.Router();
 const { 
+    calculateQuote, 
     verifyDni, 
     createCotizacion,
     getCotizacionById,
@@ -23,12 +24,34 @@ const {
 } = require('../controllers/cotizacionController');
 const { protect } = require('../middleware/authMiddleware');
 const {
-  checkValidation,
-  validateCotizacion
+    checkValidation,
+    validateCotizacion
 } = require('../middleware/validationMiddleware');
 
 // Todas las rutas son privadas (requieren autenticación)
 router.use(protect); 
+
+/**
+ * @swagger
+ * /cotizaciones/calculate:
+ *   post:
+ *     tags: [Cotizaciones]
+ *     summary: Pre-calcula una cotización para mostrar en el resumen (sin guardar).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CotizacionPayload'
+ *     responses:
+ *       200:
+ *         description: Cálculo exitoso.
+ *       400:
+ *         description: Datos inválidos.
+ */
+router.post('/calculate', 
+    calculateQuote
+);
 
 /**
  * @swagger
@@ -60,7 +83,20 @@ router.get('/verify-dni/:dni', verifyDni);
  *       200:
  *         description: Lista de cotizaciones.
  */
+router.get('/asesor', getCotizacionesByAsesor);   
+
+/**
+ * @swagger
+ * /cotizaciones:
+ *   get:
+ *     tags: [Cotizaciones]
+ *     summary: Ruta raíz alternativa para obtener cotizaciones..
+ *     responses:
+ *       200:
+ *         description: Lista de cotizaciones.
+ */
 router.get('/', getCotizacionesByAsesor);   
+
 
 /**
  * @swagger
@@ -118,7 +154,7 @@ router.get('/:id/pdf', getCotizacionPDF);
 /**
  * @swagger
  * /cotizaciones/{id}:
- *   delete:
+ *   put:
  *     tags: [Cotizaciones]
  *     summary: Anula una cotización.
  *     parameters:
@@ -137,7 +173,7 @@ router.get('/:id/pdf', getCotizacionPDF);
  *       404:
  *         description: Cotización no encontrada.
  */
-router.delete('/:id', anularCotizacion);
+router.put('/anular/:id', anularCotizacion);
 
 /**
  * @swagger

@@ -20,6 +20,7 @@ const {
   loginEmployee,
   getAllEmployees,
   updateEmployeeDetails,
+  updateMyProfile,
   getMyProfile,
   confirmEmployeeEmail,
   forgotPassword,
@@ -74,7 +75,7 @@ router.post('/register',
 
 /**
  * @swagger
- * /employees/confirm-email/{legajo}:
+ * /employees/confirm-email/{legajo}/{token}:
  *   get:
  *     tags: [Empleados - Autenticación]
  *     summary: Confirma el email de un empleado.
@@ -82,6 +83,11 @@ router.post('/register',
  *     parameters:
  *       - in: path
  *         name: legajo
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: token
  *         required: true
  *         schema:
  *           type: string
@@ -93,9 +99,9 @@ router.post('/register',
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  *       '400':
- *         description: Confirmación fallida o ya confirmada.
+ *         description: Confirmación fallida, token inválido o ya confirmada.
  */
-router.get('/confirm-email/:legajo', confirmEmployeeEmail);
+router.get('/confirm-email/:token', confirmEmployeeEmail);
 
 /**
  * @swagger
@@ -124,76 +130,6 @@ router.post('/login',
   validateEmployeeLogin,
   checkValidation,
   loginEmployee
-);
-
-/**
- * @swagger
- * /employees/myprofile:
- *   get:
- *     tags: [Empleados - Perfil]
- *     summary: Obtiene el perfil del empleado autenticado.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Perfil del empleado.
- *       '401':
- *         description: No autorizado.
- */
-router.get('/myprofile', protect, getMyProfile);
-
-/**
- * @swagger
- * /employees/:
- *   get:
- *     tags: [Empleados - Admin]
- *     summary: Obtiene la lista de todos los empleados.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Lista de empleados.
- *       '401':
- *         description: No autorizado.
- *       '403':
- *         description: No es administrador.
- */
-router.get('/', protect, isAdmin, getAllEmployees);
-
-/**
- * @swagger
- * /employees/{legajo}:
- *   put:
- *     tags: [Empleados - Admin]
- *     summary: Actualiza los detalles, estado o rol de un empleado (Admin)
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: legajo
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/EmpleadoUpdate'
- *     responses:
- *       '200':
- *         description: Empleado actualizado exitosamente.
- *       '401':
- *         description: No autorizado.
- *       '403':
- *         description: No es administrador.
- */
-router.put('/:legajo',
-  protect,
-  isAdmin,
-  validateEmployeeUpdate,
-  checkValidation,
-  updateEmployeeDetails
 );
 
 /**
@@ -248,5 +184,83 @@ router.post('/forgot-password', forgotPassword);
  */
 router.post('/reset-password/:token', resetPassword);
 
+/**
+ * @swagger
+ * /employees/myprofile:
+ *   get:
+ *     tags: [Empleados - Perfil]
+ *     summary: Obtiene el perfil del empleado autenticado.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Perfil del empleado.
+ *       '401':
+ *         description: No autorizado.
+ */
+router.get('/myprofile', protect, getMyProfile);
+
+/**
+ * @swagger
+ * /employees/myprofile:
+ *   put:
+ *     tags: [Empleados - Admin]
+ *     summary: Actualiza datos del perfil propio (Email, Teléfono, Pass)
+ */
+router.put('/myprofile', protect, updateMyProfile);
+
+/**
+ * @swagger
+ * /employees/:
+ *   get:
+ *     tags: [Empleados - Admin]
+ *     summary: Obtiene la lista de todos los empleados.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Lista de empleados.
+ *       '401':
+ *         description: No autorizado.
+ *       '403':
+ *         description: No es administrador.
+ */
+router.get('/', protect, isAdmin, getAllEmployees);
+
+/**
+ * @swagger
+ * /employees/{legajo}:
+ *   put:
+ *     tags: [Empleados - Admin]
+ *     summary: Actualiza los detalles, estado o rol de un empleado (Admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: legajo
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmpleadoUpdate'
+ *     responses:
+ *       '200':
+ *         description: Empleado actualizado exitosamente.
+ *       '401':
+ *         description: No autorizado.
+ *       '403':
+ *         description: No es administrador.
+ */
+router.put('/:legajo',
+  protect,
+  isAdmin,
+  validateEmployeeUpdate,
+  checkValidation,
+  updateEmployeeDetails
+);
 
 module.exports = router;

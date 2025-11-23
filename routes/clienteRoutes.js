@@ -21,7 +21,6 @@ const {
 
 const { protect } = require('../middleware/authMiddleware');
 
-// Importamos las reglas de validaciones y el revisor
 const {
   validateClientCreation,
   validateClientUpdate,

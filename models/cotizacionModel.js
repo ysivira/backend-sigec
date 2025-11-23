@@ -67,10 +67,10 @@ const createFullCotizacion = async (cotizacionData, miembrosData) => {
       cotizacionId,
     ]);
 
-    // 2. Insertar los Miembros
+    // Insertar los Miembros
     const queryMiembros = `
-      INSERT INTO miembros_cotizacion 
-      (cotizacion_id, parentesco, edad, valor_individual) 
+      INSERT INTO miembros_cotizacion
+      (cotizacion_id, parentesco, edad, valor_individual)
       VALUES ?
     `;
     const miembrosValues = miembrosData.map(m => [
@@ -156,7 +156,7 @@ const updateFullCotizacion = async (cotizacionId, cotizacionData, miembrosData) 
         INSERT INTO miembros_cotizacion
         (cotizacion_id, parentesco, edad, valor_individual)
         VALUES ?
-        `;
+      `;
 
       const miembrosValues = miembrosData.map(m => [
         cotizacionId, m.parentesco, m.edad,
@@ -206,9 +206,16 @@ const findLastCotizationByDni = async (dni) => {
  * @returns {Promise<object|undefined>} La cotización completa si se encuentra, de lo contrario undefined.
  */
 const findCotizacionById = async (id) => {
-  // Obtener la cotización principal
-  const [cotizacionRows] = await pool.query('SELECT * FROM cotizaciones WHERE id = ?', [id]);
-  if (!cotizacionRows[0]) return undefined; // No se encontró
+  // Obtener la cotización principal, añadiendo fechas calculadas
+  const query = `
+    SELECT *,
+      DATE_ADD(fecha_creacion, INTERVAL 15 DAY) AS fecha_vencimiento,
+      DATE_ADD(LAST_DAY(fecha_creacion), INTERVAL 1 DAY) AS fecha_ingreso_estimado
+    FROM cotizaciones
+    WHERE id = ?
+  `;
+  const [cotizacionRows] = await pool.query(query, [id]);
+  if (!cotizacionRows[0]) return undefined; 
   const cotizacion = cotizacionRows[0];
 
   // Obtener los datos relacionados
@@ -243,11 +250,14 @@ const findCotizacionesByAsesor = async (asesorId) => {
     SELECT 
       c.id, c.fecha_creacion, c.valor_total, c.estado, c.activo,
       cl.nombres AS cliente_nombre, cl.apellidos AS cliente_apellido,
-      p.nombre AS plan_nombre
+      cl.dni AS cliente_dni,
+      p.nombre AS plan_nombre,
+      DATE_ADD(c.fecha_creacion, INTERVAL 15 DAY) AS fecha_vencimiento,
+      DATE_ADD(LAST_DAY(c.fecha_creacion), INTERVAL 1 DAY) AS fecha_ingreso_estimado
     FROM cotizaciones c
     JOIN clientes cl ON c.cliente_id = cl.id
     JOIN planes p ON c.plan_id = p.id
-    WHERE c.asesor_id = ? AND c.activo = 1
+    WHERE c.asesor_id = ? 
     ORDER BY c.fecha_creacion DESC
   `;
   const [rows] = await pool.query(query, [asesorId]);
@@ -277,21 +287,21 @@ const anularCotizacion = async (id) => {
  */
 const findActiveCotizacionByPlanAndMemberCount = async (cliente_id, asesor_id, plan_id, member_count) => {
   const query = `
-SELECT c.id
- FROM cotizaciones c
- -- Hacemos un subquery para contar los miembros de cada cotización
-  JOIN (
-  SELECT cotizacion_id, COUNT(*) AS conteo
-  FROM miembros_cotizacion
-  GROUP BY cotizacion_id ) mc
-  ON c.id = mc.cotizacion_id
-  WHERE c.cliente_id = ? 
-  AND c.asesor_id = ? 
-  AND c.plan_id = ? 
-  AND c.activo = 1
-  AND mc.conteo = ? -- Validamos también el conteo de miembros
-  LIMIT 1
- `;
+    SELECT c.id
+    FROM cotizaciones c
+    -- Hacemos un subquery para contar los miembros de cada cotización
+    JOIN (
+      SELECT cotizacion_id, COUNT(*) AS conteo
+      FROM miembros_cotizacion
+      GROUP BY cotizacion_id
+    ) mc ON c.id = mc.cotizacion_id
+    WHERE c.cliente_id = ?
+    AND c.asesor_id = ?
+    AND c.plan_id = ?
+    AND c.activo = 1
+    AND mc.conteo = ? -- Validamos también el conteo de miembros
+    LIMIT 1
+  `;
   const [rows] = await pool.query(query, [cliente_id, asesor_id, plan_id, member_count]);
   return rows[0];
 };

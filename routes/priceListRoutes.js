@@ -31,7 +31,7 @@ const {
 } = require('../middleware/validationMiddleware');
 
 //=============================================================================
-// --- Rutas de Administrador (Crear, Actualizar, Borrar) ---
+// Rutas de Administrador (Crear, Actualizar, Borrar) 
 //=============================================================================
 
 /**
@@ -171,7 +171,7 @@ router.post('/increase',
 );
 
 //=============================================================================
-// --- Rutas de Lectura (Admin y Asesor) ---
+// Rutas de Lectura (Admin y Asesor) 
 //=============================================================================
 
 /**

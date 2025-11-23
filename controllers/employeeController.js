@@ -49,7 +49,12 @@ const registerEmployee = asyncHandler(async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Genera el token de activación
-    const activationToken = crypto.randomBytes(20).toString('hex');
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(activationToken)
+      .digest('hex');
+
     // Define la expiración 
     const activationTokenExpires = new Date(Date.now() + 3600000); 
 
@@ -59,12 +64,13 @@ const registerEmployee = asyncHandler(async (req, res) => {
         apellido, segundo_apellido: segundo_apellido || null,
         email, telefono, direccion, 
         hashedPassword, 
-        reset_password_token: activationToken, 
-        reset_password_expires: activationTokenExpires 
+        activation_token: hashedToken, 
+        activation_token_expires: activationTokenExpires 
     };
 
     await Employee.create(newEmployeeData);
     
+    // Enviar email de activación
     await sendActivationEmail(email, legajo, activationToken); 
 
     res.status(201).json({ message: 'Asesor registrado exitosamente. La cuenta está inactiva y pendiente de activación.' });
@@ -122,7 +128,6 @@ const getAllEmployees = asyncHandler(async (req, res) => {
 const updateEmployeeDetails = asyncHandler(async (req, res) => {
   const { legajo } = req.params;
   const updateData = { ...req.body };
-
   const { estado, rol, supervisor_id } = updateData;
   
   const employeeToUpdate = await Employee.findByLegajo(legajo);
@@ -178,6 +183,47 @@ const updateEmployeeDetails = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Actualizar el perfil del empleado autenticado (Self-Service)
+ * @route   PUT /api/employees/myprofile
+ * @access  Private (Cualquier rol)
+ */
+const updateMyProfile = asyncHandler(async (req, res) => {
+  
+    const employee = await Employee.findByLegajo(req.employee.legajo);
+
+    if (!employee) {
+        res.status(404);
+        throw new Error('Empleado no encontrado');
+    }
+
+    const { email, telefono, password } = req.body;
+    const updateData = {};
+
+    if (email) updateData.email = email;
+    if (telefono) updateData.telefono = telefono;
+    
+    if (password) {
+        const salt = await bcrypt.genSalt(10);
+        updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    // Si no hay datos para actualizar
+    if (Object.keys(updateData).length === 0) {
+        return res.status(200).json({ message: 'No se enviaron cambios.' });
+    }
+
+    await Employee.updateDetails(employee.legajo, updateData);
+
+    res.status(200).json({ 
+        message: 'Perfil actualizado exitosamente.',
+        user: { 
+            ...req.employee, 
+            ...updateData 
+        }
+    });
+});
+
+/**
  * @desc    Obtener el perfil del empleado autenticado
  * @route   GET /api/employees/myprofile
  * @access  Private
@@ -196,18 +242,34 @@ const getMyProfile = async (req, res) => {
 
 /**
  * @desc    Ruta de confirmación de email (Link enviado al usuario)
- * @route   GET /api/employees/confirm-email/:legajo
+ * @route   GET /api/employees/confirm-email/:token
  * @access  Public
  * @param {object} req - El objeto de solicitud de Express.
  * @param {object} res - El objeto de respuesta de Express.
  */
 const confirmEmployeeEmail = asyncHandler(async (req, res) => {
-    const { legajo } = req.params;
-    const result = await Employee.confirmEmail(legajo);
+    const { token } = req.params;
+
+    // Hashea el token de la URL para compararlo con el de la BD
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+    
+    const employee = await Employee.findByActivationToken(hashedToken);
+
+    if (!employee) {
+        res.status(400);
+        throw new Error('Token de activación inválido o expirado.');
+    }
+
+    const result = await Employee.confirmEmail(employee.legajo);
+    
     if (result.affectedRows === 0) {
         res.status(400);
-        throw new Error('Confirmación de email fallida o ya confirmada.');
+        throw new Error('Confirmación de email fallida o la cuenta ya ha sido confirmada.');
     }
+
     res.status(200).json({ message: 'Email confirmado exitosamente. La cuenta está pendiente de activación por el Administrador.' });
 });
 
@@ -223,7 +285,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     const employee = await Employee.findByEmail(email); 
     if (!employee) {
-      // No revelar si el email existe o no
       return res.status(200).json({ message: 'Si existe una cuenta con ese email, se ha enviado un enlace de reseteo.' });
     }
 
@@ -233,19 +294,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
       .update(resetToken)
       .digest('hex');
 
-    const expires = new Date(Date.now() + 3600000); // 1 hora
+    const expires = new Date(Date.now() + 3600000); 
 
-    // Guardar token en DB
     await Employee.saveResetToken(employee.legajo, hashedToken, expires);
 
     try {
-      // Enviar el email (con el token SIN hashear)
       await sendPasswordResetEmail(employee.email, resetToken);
       res.status(200).json({ message: 'Si existe una cuenta con ese email, se ha enviado un enlace de reseteo.' });
     
     } catch (emailError) {
       console.error(emailError);
-      // Si falla el envío de email, notificamos al usuario 
       res.status(500);
       throw new Error('Error al enviar el email. Por favor, intente de nuevo más tarde.');
     }
@@ -292,8 +350,9 @@ module.exports = {
     loginEmployee,
     getAllEmployees,
     updateEmployeeDetails,
-    confirmEmployeeEmail,
+    updateMyProfile,
     getMyProfile,
+    confirmEmployeeEmail,
     forgotPassword, 
     resetPassword,  
 };
