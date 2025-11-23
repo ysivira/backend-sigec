@@ -8,7 +8,7 @@ Este repositorio contiene el **backend** de la aplicación, que incluye:
 * Autenticación y autorización (Asesores, Supervisores, Admin) usando **JWT** (JSON Web Tokens).
 * Gestión completa (CRUD) de Clientes, Planes y Empleados.
 * Un **motor de cálculo** dinámico para cotizaciones.
-* Generación de documentos **PDF** de cotización sobre la marcha.
+* Generación de documentos **PDF** de cotización sobre la marcha (vía `pdfmake`).
 * Documentación de API interactiva y automatizada con **Swagger**.
 * **Una suite de 10 pruebas de integración (testing) automatizadas con Jest y Supertest.**
 
